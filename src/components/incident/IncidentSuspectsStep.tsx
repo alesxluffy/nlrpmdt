@@ -70,7 +70,7 @@ const emptySuspect: SuspectData = {
 
 export default function IncidentSuspectsStep({ formData, updateFormData }: IncidentSuspectsStepProps) {
   const [newSuspect, setNewSuspect] = useState<SuspectData>({ ...emptySuspect });
-  const [newVehicle, setNewVehicle] = useState({ vehicle: '', plate: '', color: '' });
+  const [newVehicle, setNewVehicle] = useState({ vehicle: '', plate: '', color: '', registeredTo: '' });
   const [chargeSearchOpen, setChargeSearchOpen] = useState(false);
   const [chargeSearch, setChargeSearch] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -185,7 +185,7 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
   const addVehicle = () => {
     if (newVehicle.vehicle) {
       updateFormData({ vehicles: [...formData.vehicles, newVehicle] });
-      setNewVehicle({ vehicle: '', plate: '', color: '' });
+      setNewVehicle({ vehicle: '', plate: '', color: '', registeredTo: '' });
     }
   };
 
@@ -619,6 +619,7 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
                   <p className="text-sm text-muted-foreground">
                     {vehicle.color && `${vehicle.color} • `}
                     {vehicle.plate || 'No plate'}
+                    {vehicle.registeredTo && ` • Registered to: ${vehicle.registeredTo}`}
                   </p>
                 </div>
                 <Button
@@ -636,7 +637,7 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
         )}
 
         {/* Add new vehicle */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-lg bg-secondary/20 border border-border/50">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 p-4 rounded-lg bg-secondary/20 border border-border/50">
           <div className="space-y-1">
             <Label className="text-xs">Vehicle</Label>
             <Select
@@ -656,7 +657,7 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
           <div className="space-y-1">
             <Label className="text-xs">Color</Label>
             <Input
-              placeholder="Color (optional)"
+              placeholder="Color"
               value={newVehicle.color}
               onChange={(e) => setNewVehicle({ ...newVehicle, color: e.target.value })}
             />
@@ -664,9 +665,17 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
           <div className="space-y-1">
             <Label className="text-xs">Plate</Label>
             <Input
-              placeholder="Plate (optional)"
+              placeholder="Plate"
               value={newVehicle.plate}
               onChange={(e) => setNewVehicle({ ...newVehicle, plate: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Registered To</Label>
+            <Input
+              placeholder="Owner name"
+              value={newVehicle.registeredTo}
+              onChange={(e) => setNewVehicle({ ...newVehicle, registeredTo: e.target.value })}
             />
           </div>
           <div className="flex items-end">

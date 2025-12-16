@@ -32,6 +32,7 @@ export interface SuspectFormData {
 export interface CitizenInvolved {
   fullName: string;
   phoneNumber: string;
+  cid: string;
 }
 
 export interface EvidenceItem {
@@ -57,8 +58,23 @@ export interface IncidentFormData {
     vehicle: string;
     plate: string;
     color: string;
+    registeredTo: string;
   }>;
   notes: string;
+  // 10-90 specific fields
+  reportingOfficer: string;
+  sceneCommand: string;
+  negotiator: string;
+  hostageOfficer: string;
+  pursuitPrimary: string;
+  pursuitSecondary: string;
+  pursuitTertiary: string;
+  pursuitParallel: string;
+  robbersInvolved: number;
+  robbersApprehended: number;
+  hostagesCount: number;
+  demands: string;
+  chaseNarrative: string;
 }
 
 const STEPS = ['Type', 'Details', 'Suspects & Vehicles', 'Review'];
@@ -83,6 +99,20 @@ export default function NewIncident() {
     suspects: [],
     vehicles: [],
     notes: '',
+    // 10-90 specific fields
+    reportingOfficer: '',
+    sceneCommand: '',
+    negotiator: '',
+    hostageOfficer: '',
+    pursuitPrimary: '',
+    pursuitSecondary: '',
+    pursuitTertiary: '',
+    pursuitParallel: '',
+    robbersInvolved: 0,
+    robbersApprehended: 0,
+    hostagesCount: 0,
+    demands: '',
+    chaseNarrative: '',
   });
 
   const createIncidentMutation = useMutation({
@@ -173,79 +203,144 @@ export default function NewIncident() {
   });
 
   const generateReport = (data: IncidentFormData): string => {
-    let report = `**INCIDENT REPORT**\n`;
-    report += `Type: ${data.incidentType.toUpperCase()}\n`;
-    report += `Location: ${data.location}${data.customLocation ? ` (${data.customLocation})` : ''}\n\n`;
-    
-    if (data.description) {
-      report += `**Description:**\n${data.description}\n\n`;
-    }
-    
-    if (data.officers.length > 0) {
-      report += `**Responding Officers:**\n${data.officers.join(', ')}\n\n`;
-    }
-    
-    if (data.pursuitOccurred) {
-      report += `**Pursuit Details:**\n`;
-      report += `- Initiator: ${data.pursuitInitiator}\n`;
-      report += `- Reason: ${data.pursuitReason}\n`;
-      report += `- Type: ${data.pursuitType}\n`;
-      report += `- Termination: ${data.pursuitTermination}\n\n`;
-    }
+    const is1090 = ['bank', 'jewelry', 'store'].includes(data.incidentType);
+    const incidentTypeLabel = data.incidentType === 'bank' ? 'Bank' : 
+                              data.incidentType === 'jewelry' ? 'Jewelry Store' : 
+                              data.incidentType === 'store' ? 'Store' : data.incidentType;
+    const today = new Date().toLocaleDateString();
 
-    if (data.citizensInvolved.length > 0) {
-      report += `**Citizens Involved:**\n`;
-      data.citizensInvolved.forEach((c, i) => {
-        report += `${i + 1}. ${c.fullName} - Phone: ${c.phoneNumber}\n`;
-      });
-      report += '\n';
-    }
+    if (is1090) {
+      // 10-90 Format
+      let report = `**10-90 | ${incidentTypeLabel} Robbery: ${data.location}**\n\n`;
+      report += `**REPORTING OFFICER:**\n${data.reportingOfficer || 'N/A'}\n\n`;
+      
+      report += `**SCENE ASSIGNMENT**\n`;
+      report += `Scene Command: ${data.sceneCommand || 'N/A'}\n`;
+      report += `Negotiator: ${data.negotiator || 'N/A'}\n`;
+      report += `Stayed Back For Hostage: ${data.hostageOfficer || 'N/A'}\n\n`;
+      
+      if (data.pursuitOccurred) {
+        report += `**INVOLVED IN PURSUIT:**\n`;
+        report += `Primary: ${data.pursuitPrimary || 'N/A'}\n`;
+        report += `Secondary: ${data.pursuitSecondary || 'N/A'}\n`;
+        report += `Tertiary: ${data.pursuitTertiary || 'N/A'}\n`;
+        report += `Parallel: ${data.pursuitParallel || 'N/A'}\n\n`;
+      }
+      
+      report += `**DETAILS & DEMANDS**\n\n`;
+      report += `While patrolling, we received a report of an alarm going off at the ${data.location}. ${data.reportingOfficer || 'Reporting officer'} was assigned to create an incident report.\n\n`;
+      report += `After setting up the perimeters around the area, we began with the negotiations. By interacting with the robbers we learned few below mentioned things:\n\n`;
+      report += `Robbers Involved: ${data.robbersInvolved || 0}\n`;
+      report += `Robbers Apprehended: ${data.robbersApprehended || 0}\n`;
+      report += `Hostages: ${data.hostagesCount || 0}\n\n`;
+      
+      if (data.vehicles.length > 0) {
+        report += `**Vehicle Details**\n`;
+        data.vehicles.forEach((v) => {
+          report += `Model: ${v.vehicle}\n`;
+          report += `Color: ${v.color || 'N/A'}\n`;
+          report += `Plate: ${v.plate || 'N/A'}\n`;
+          report += `Registered to: ${v.registeredTo || 'N/A'}\n\n`;
+        });
+      }
+      
+      report += `Robbers were unidentified and in exchange of the hostage, their demand was ${data.demands || 'Free Passage & No Spikes'}.\n\n`;
+      report += `Once everyone was ready, scene command prepared a lineup for the pursuit.\n\n`;
+      
+      if (data.pursuitOccurred && data.chaseNarrative) {
+        report += `**CHASE:**\n${data.chaseNarrative}\n\n`;
+      } else if (data.pursuitOccurred) {
+        report += `**CHASE:**\nOnce everyone was ready, the chase started and they attempted to evade from police recklessly. The officers followed the suspects vehicle according to the sequence. The robbers kept roaming in the city and were damaging the public property.\n\n`;
+      }
+      
+      if (data.suspects.length > 0) {
+        data.suspects.forEach((s, i) => {
+          report += `**Suspect ${i + 1}:**\n`;
+          report += `Mugshot: ${s.mugshot || 'N/A'}\n`;
+          report += `Name: ${s.name}\n`;
+          report += `CID: ${s.cid || 'N/A'}\n`;
+          report += `Charges: ${s.charges || 'None'}\n`;
+          report += `Confiscated Items: ${s.confiscatedItems || 'N/A'}\n`;
+          report += `Evidences: ${s.evidences || 'N/A'}\n`;
+          if (s.isHUT) {
+            report += `Fine: HUT\n`;
+            report += `Jail: HUT\n`;
+          } else {
+            report += `Fine: $${s.fine?.toLocaleString() || 0}\n`;
+            report += `Jail: ${s.jail || 0} months\n`;
+          }
+          report += `Tag: ${s.tag || 'N/A'}\n\n`;
+        });
+      }
+      
+      return report;
+    } else {
+      // Standard Format for other incidents
+      let report = `**Date:** ${today}\n`;
+      report += `**Title:** ${data.incidentType.toUpperCase()} | ${data.location}\n`;
+      report += `**Incident Type:** ${incidentTypeLabel}\n`;
+      report += `**Officers Involved:** ${data.officers.length > 0 ? data.officers.join(', ') : 'N/A'}\n`;
+      
+      if (data.citizensInvolved.length > 0) {
+        report += `**People Involved:**\n`;
+        data.citizensInvolved.forEach((c) => {
+          report += `- ${c.fullName}${c.cid ? ` (CID: ${c.cid})` : ''}${c.phoneNumber ? ` - Phone: ${c.phoneNumber}` : ''}\n`;
+        });
+      }
+      
+      report += `**Location:** ${data.location}${data.customLocation ? ` (${data.customLocation})` : ''}\n`;
+      report += `**Report:**\n${data.description || 'N/A'}\n\n`;
+      
+      if (data.pursuitOccurred) {
+        report += `**Pursuit Details:**\n`;
+        report += `- Initiator: ${data.pursuitInitiator}\n`;
+        report += `- Reason: ${data.pursuitReason}\n`;
+        report += `- Type: ${data.pursuitType}\n`;
+        report += `- Termination: ${data.pursuitTermination}\n\n`;
+      }
 
-    if (data.incidentEvidences.length > 0) {
-      report += `**Evidence Collected:**\n`;
-      data.incidentEvidences.forEach((e) => {
-        report += `- ${e.type}: ${e.url}\n`;
-      });
-      report += '\n';
+      if (data.incidentEvidences.length > 0) {
+        report += `**Evidence Collected:**\n`;
+        data.incidentEvidences.forEach((e) => {
+          report += `- ${e.type}: ${e.url}\n`;
+        });
+        report += '\n';
+      }
+      
+      if (data.suspects.length > 0) {
+        data.suspects.forEach((s, i) => {
+          report += `**Suspect ${i + 1}:**\n`;
+          report += `Mugshot: ${s.mugshot || 'N/A'}\n`;
+          report += `Name: ${s.name}\n`;
+          report += `CID: ${s.cid || 'N/A'}\n`;
+          report += `Charges: ${s.charges || 'None'}\n`;
+          report += `Confiscated Items: ${s.confiscatedItems || 'N/A'}\n`;
+          report += `Evidences: ${s.evidences || 'N/A'}\n`;
+          if (s.isHUT) {
+            report += `Fine: HUT\n`;
+            report += `Jail: HUT\n`;
+          } else {
+            report += `Fine: $${s.fine?.toLocaleString() || 0}\n`;
+            report += `Jail: ${s.jail || 0} months\n`;
+          }
+          report += `Tag: ${s.tag || 'N/A'}\n\n`;
+        });
+      }
+      
+      if (data.vehicles.length > 0) {
+        report += `**Vehicles:**\n`;
+        data.vehicles.forEach((v) => {
+          report += `- ${v.vehicle}${v.color ? ` (${v.color})` : ''}${v.plate ? ` - Plate: ${v.plate}` : ''}${v.registeredTo ? ` - Registered to: ${v.registeredTo}` : ''}\n`;
+        });
+        report += '\n';
+      }
+      
+      if (data.notes) {
+        report += `**Additional Notes:**\n${data.notes}\n`;
+      }
+      
+      return report;
     }
-    
-    if (data.suspects.length > 0) {
-      report += `**Suspects:**\n`;
-      data.suspects.forEach((s, i) => {
-        report += `\n**Suspect ${i + 1}:**\n`;
-        if (s.mugshot) report += `Mugshot: ${s.mugshot}\n`;
-        report += `Name: ${s.name}\n`;
-        if (s.cid) report += `CID: ${s.cid}\n`;
-        report += `Charges: ${s.charges || 'None'}\n`;
-        if (s.confiscatedItems) report += `Confiscated Items: ${s.confiscatedItems}\n`;
-        if (s.evidences) report += `Evidences: ${s.evidences}\n`;
-        report += `Plead: ${s.plead}\n`;
-        if (s.isHUT) {
-          report += `Fine: HUT\n`;
-          report += `Jail: HUT\n`;
-        } else {
-          report += `Fine: $${s.fine?.toLocaleString() || 0}\n`;
-          report += `Jail: ${s.jail || 0} months\n`;
-        }
-        if (s.tag) report += `Tag: ${s.tag}\n`;
-        report += `Status: ${s.status}\n`;
-      });
-      report += '\n';
-    }
-    
-    if (data.vehicles.length > 0) {
-      report += `**Vehicles:**\n`;
-      data.vehicles.forEach((v, i) => {
-        report += `${i + 1}. ${v.vehicle}${v.color ? ` (${v.color})` : ''}${v.plate ? ` - Plate: ${v.plate}` : ''}\n`;
-      });
-      report += '\n';
-    }
-    
-    if (data.notes) {
-      report += `**Additional Notes:**\n${data.notes}\n`;
-    }
-    
-    return report;
   };
 
   const updateFormData = (updates: Partial<IncidentFormData>) => {
