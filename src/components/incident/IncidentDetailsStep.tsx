@@ -27,7 +27,7 @@ interface IncidentDetailsStepProps {
 
 export default function IncidentDetailsStep({ formData, updateFormData }: IncidentDetailsStepProps) {
   const [officerInput, setOfficerInput] = useState('');
-  const [newCitizen, setNewCitizen] = useState<CitizenInvolved>({ fullName: '', phoneNumber: '' });
+  const [newCitizen, setNewCitizen] = useState<CitizenInvolved>({ fullName: '', phoneNumber: '', cid: '' });
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const incidentType = INCIDENT_TYPES.find(t => t.value === formData.incidentType);
@@ -67,7 +67,7 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
   const addCitizen = () => {
     if (newCitizen.fullName && newCitizen.phoneNumber) {
       updateFormData({ citizensInvolved: [...formData.citizensInvolved, newCitizen] });
-      setNewCitizen({ fullName: '', phoneNumber: '' });
+      setNewCitizen({ fullName: '', phoneNumber: '', cid: '' });
     }
   };
 
@@ -197,12 +197,17 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
 
       {/* Citizens Involved */}
       <div className="space-y-4 p-4 rounded-lg bg-secondary/30 border border-border">
-        <Label className="text-base font-medium">Citizens Involved</Label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Label className="text-base font-medium">People Involved</Label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Input
             placeholder="Full Name"
             value={newCitizen.fullName}
             onChange={(e) => setNewCitizen(prev => ({ ...prev, fullName: e.target.value }))}
+          />
+          <Input
+            placeholder="CID"
+            value={newCitizen.cid}
+            onChange={(e) => setNewCitizen(prev => ({ ...prev, cid: e.target.value }))}
           />
           <div className="flex gap-2">
             <Input
@@ -215,7 +220,7 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
               variant="outline"
               size="icon"
               onClick={addCitizen}
-              disabled={!newCitizen.fullName || !newCitizen.phoneNumber}
+              disabled={!newCitizen.fullName}
             >
               <Plus className="w-4 h-4" />
             </Button>
@@ -227,7 +232,9 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
             {formData.citizensInvolved.map((citizen, index) => (
               <div key={index} className="flex items-center justify-between p-2 bg-background rounded border border-border">
                 <span className="text-sm">
-                  {citizen.fullName} - <span className="text-muted-foreground">{citizen.phoneNumber}</span>
+                  {citizen.fullName}
+                  {citizen.cid && <span className="text-muted-foreground"> (CID: {citizen.cid})</span>}
+                  {citizen.phoneNumber && <span className="text-muted-foreground"> - {citizen.phoneNumber}</span>}
                 </span>
                 <button
                   type="button"
@@ -326,6 +333,130 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
         )}
       </div>
 
+      {/* 10-90 Specific Fields - Scene Assignment */}
+      {['bank', 'jewelry', 'store'].includes(formData.incidentType) && (
+        <div className="space-y-4 p-4 rounded-lg bg-police-red/10 border border-police-red/30">
+          <Label className="text-base font-medium text-police-red">10-90 Scene Assignment</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs">Reporting Officer (First Arrived)</Label>
+              <Select
+                value={formData.reportingOfficer}
+                onValueChange={(value) => updateFormData({ reportingOfficer: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select reporting officer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {officers?.map((officer) => {
+                    const name = `${officer.badge_number} ${officer.first_name} ${officer.last_name}`;
+                    return (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Scene Command</Label>
+              <Select
+                value={formData.sceneCommand}
+                onValueChange={(value) => updateFormData({ sceneCommand: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select scene command" />
+                </SelectTrigger>
+                <SelectContent>
+                  {officers?.map((officer) => {
+                    const name = `${officer.badge_number} ${officer.first_name} ${officer.last_name}`;
+                    return (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Negotiator</Label>
+              <Select
+                value={formData.negotiator}
+                onValueChange={(value) => updateFormData({ negotiator: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select negotiator" />
+                </SelectTrigger>
+                <SelectContent>
+                  {officers?.map((officer) => {
+                    const name = `${officer.badge_number} ${officer.first_name} ${officer.last_name}`;
+                    return (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Stayed Back For Hostage</Label>
+              <Select
+                value={formData.hostageOfficer}
+                onValueChange={(value) => updateFormData({ hostageOfficer: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select officer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {officers?.map((officer) => {
+                    const name = `${officer.badge_number} ${officer.first_name} ${officer.last_name}`;
+                    return (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs">Robbers Involved</Label>
+              <Input
+                type="number"
+                min="0"
+                value={formData.robbersInvolved || ''}
+                onChange={(e) => updateFormData({ robbersInvolved: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Robbers Apprehended</Label>
+              <Input
+                type="number"
+                min="0"
+                value={formData.robbersApprehended || ''}
+                onChange={(e) => updateFormData({ robbersApprehended: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Hostages</Label>
+              <Input
+                type="number"
+                min="0"
+                value={formData.hostagesCount || ''}
+                onChange={(e) => updateFormData({ hostagesCount: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">Demands</Label>
+            <Input
+              placeholder="e.g., Free Passage & No Spikes"
+              value={formData.demands}
+              onChange={(e) => updateFormData({ demands: e.target.value })}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Pursuit Section */}
       <div className="space-y-4 p-4 rounded-lg bg-secondary/30 border border-border">
         <div className="flex items-center justify-between">
@@ -337,75 +468,175 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
         </div>
 
         {formData.pursuitOccurred && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Pursuit Initiator</Label>
-              <Select
-                value={formData.pursuitInitiator}
-                onValueChange={(value) => updateFormData({ pursuitInitiator: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select initiator" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PURSUIT_INITIATORS.map((item) => (
-                    <SelectItem key={item} value={item}>{item}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <>
+            {/* Pursuit Lineup for 10-90 */}
+            {['bank', 'jewelry', 'store'].includes(formData.incidentType) && (
+              <div className="space-y-4 p-3 rounded-lg bg-police-blue/10 border border-police-blue/30">
+                <Label className="text-sm font-medium text-police-blue">Pursuit Lineup</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Primary</Label>
+                    <Select
+                      value={formData.pursuitPrimary}
+                      onValueChange={(value) => updateFormData({ pursuitPrimary: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select primary" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {officers?.map((officer) => {
+                          const name = `${officer.badge_number} ${officer.first_name} ${officer.last_name}`;
+                          return (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Secondary</Label>
+                    <Select
+                      value={formData.pursuitSecondary}
+                      onValueChange={(value) => updateFormData({ pursuitSecondary: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select secondary" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {officers?.map((officer) => {
+                          const name = `${officer.badge_number} ${officer.first_name} ${officer.last_name}`;
+                          return (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Tertiary</Label>
+                    <Select
+                      value={formData.pursuitTertiary}
+                      onValueChange={(value) => updateFormData({ pursuitTertiary: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select tertiary" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {officers?.map((officer) => {
+                          const name = `${officer.badge_number} ${officer.first_name} ${officer.last_name}`;
+                          return (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Parallel</Label>
+                    <Select
+                      value={formData.pursuitParallel}
+                      onValueChange={(value) => updateFormData({ pursuitParallel: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select parallel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {officers?.map((officer) => {
+                          const name = `${officer.badge_number} ${officer.first_name} ${officer.last_name}`;
+                          return (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Pursuit Initiator</Label>
+                <Select
+                  value={formData.pursuitInitiator}
+                  onValueChange={(value) => updateFormData({ pursuitInitiator: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select initiator" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PURSUIT_INITIATORS.map((item) => (
+                      <SelectItem key={item} value={item}>{item}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Pursuit Reason</Label>
+                <Select
+                  value={formData.pursuitReason}
+                  onValueChange={(value) => updateFormData({ pursuitReason: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select reason" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PURSUIT_REASONS.map((item) => (
+                      <SelectItem key={item} value={item}>{item}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Pursuit Type</Label>
+                <Select
+                  value={formData.pursuitType}
+                  onValueChange={(value) => updateFormData({ pursuitType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PURSUIT_TYPES.map((item) => (
+                      <SelectItem key={item} value={item}>{item}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Pursuit Termination</Label>
+                <Select
+                  value={formData.pursuitTermination}
+                  onValueChange={(value) => updateFormData({ pursuitTermination: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select termination" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PURSUIT_TERMINATIONS.map((item) => (
+                      <SelectItem key={item} value={item}>{item}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Pursuit Reason</Label>
-              <Select
-                value={formData.pursuitReason}
-                onValueChange={(value) => updateFormData({ pursuitReason: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select reason" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PURSUIT_REASONS.map((item) => (
-                    <SelectItem key={item} value={item}>{item}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Pursuit Type</Label>
-              <Select
-                value={formData.pursuitType}
-                onValueChange={(value) => updateFormData({ pursuitType: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PURSUIT_TYPES.map((item) => (
-                    <SelectItem key={item} value={item}>{item}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Pursuit Termination</Label>
-              <Select
-                value={formData.pursuitTermination}
-                onValueChange={(value) => updateFormData({ pursuitTermination: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select termination" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PURSUIT_TERMINATIONS.map((item) => (
-                    <SelectItem key={item} value={item}>{item}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            {/* Chase Narrative for 10-90 */}
+            {['bank', 'jewelry', 'store'].includes(formData.incidentType) && (
+              <div className="space-y-2">
+                <Label className="text-xs">Chase Narrative</Label>
+                <Textarea
+                  placeholder="Describe the chase..."
+                  value={formData.chaseNarrative}
+                  onChange={(e) => updateFormData({ chaseNarrative: e.target.value })}
+                  rows={3}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
       <ImagePreviewModal imageUrl={previewImage} onClose={() => setPreviewImage(null)} />
