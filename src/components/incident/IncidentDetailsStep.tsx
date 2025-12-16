@@ -16,8 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Plus, Image } from 'lucide-react';
+import { X, Plus, Image, Eye } from 'lucide-react';
 import type { IncidentFormData, CitizenInvolved, EvidenceItem } from '@/pages/NewIncident';
+import { ImagePreviewModal } from '@/components/ui/image-preview-modal';
 
 interface IncidentDetailsStepProps {
   formData: IncidentFormData;
@@ -27,6 +28,7 @@ interface IncidentDetailsStepProps {
 export default function IncidentDetailsStep({ formData, updateFormData }: IncidentDetailsStepProps) {
   const [officerInput, setOfficerInput] = useState('');
   const [newCitizen, setNewCitizen] = useState<CitizenInvolved>({ fullName: '', phoneNumber: '' });
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const incidentType = INCIDENT_TYPES.find(t => t.value === formData.incidentType);
   const hasFixedLocation = incidentType && 'fixedLocation' in incidentType;
@@ -269,7 +271,10 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
                     className="text-sm"
                   />
                   {getEvidenceUrl(evidence) && (
-                    <div className="relative w-full max-w-xs rounded-lg overflow-hidden border border-border bg-background">
+                    <div 
+                      className="relative w-full max-w-xs rounded-lg overflow-hidden border border-border bg-background cursor-pointer group"
+                      onClick={() => setPreviewImage(getEvidenceUrl(evidence))}
+                    >
                       <img 
                         src={getEvidenceUrl(evidence)} 
                         alt={`${evidence} preview`}
@@ -278,6 +283,9 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}
                       />
+                      <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Eye className="w-6 h-6 text-foreground" />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -400,6 +408,7 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
           </div>
         )}
       </div>
+      <ImagePreviewModal imageUrl={previewImage} onClose={() => setPreviewImage(null)} />
     </div>
   );
 }

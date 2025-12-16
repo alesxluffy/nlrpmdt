@@ -27,8 +27,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Plus, Trash2, User, Car, Search, X, AlertTriangle, DollarSign, Clock, Percent } from 'lucide-react';
+import { Plus, Trash2, User, Car, Search, X, AlertTriangle, DollarSign, Clock, Percent, Eye } from 'lucide-react';
 import type { IncidentFormData } from '@/pages/NewIncident';
+import { ImagePreviewModal } from '@/components/ui/image-preview-modal';
 
 interface SuspectData {
   name: string;
@@ -72,6 +73,7 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
   const [newVehicle, setNewVehicle] = useState({ vehicle: '', plate: '', color: '' });
   const [chargeSearchOpen, setChargeSearchOpen] = useState(false);
   const [chargeSearch, setChargeSearch] = useState('');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const filteredCharges = useMemo(() => {
     if (!chargeSearch) return PENAL_CODES;
@@ -212,11 +214,19 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
               >
                 <div className="flex gap-4">
                   {suspect.mugshot && (
-                    <img
-                      src={suspect.mugshot}
-                      alt="Mugshot"
-                      className="w-16 h-16 rounded-lg object-cover border border-border"
-                    />
+                    <div 
+                      className="relative cursor-pointer group"
+                      onClick={() => setPreviewImage(suspect.mugshot)}
+                    >
+                      <img
+                        src={suspect.mugshot}
+                        alt="Mugshot"
+                        className="w-16 h-16 rounded-lg object-cover border border-border"
+                      />
+                      <div className="absolute inset-0 rounded-lg bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Eye className="w-4 h-4 text-foreground" />
+                      </div>
+                    </div>
                   )}
                   <div className="space-y-1">
                     <p className="font-medium text-foreground">{suspect.name}</p>
@@ -288,11 +298,42 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Mugshot URL</Label>
-              <Input
-                placeholder="Discord image URL"
-                value={newSuspect.mugshot}
-                onChange={(e) => setNewSuspect({ ...newSuspect, mugshot: e.target.value })}
-              />
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Discord image URL"
+                  value={newSuspect.mugshot}
+                  onChange={(e) => setNewSuspect({ ...newSuspect, mugshot: e.target.value })}
+                />
+                {newSuspect.mugshot && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setPreviewImage(newSuspect.mugshot)}
+                    title="Preview image"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+              {newSuspect.mugshot && (
+                <div 
+                  className="relative w-16 h-16 rounded-lg overflow-hidden border border-border bg-background cursor-pointer group mt-2"
+                  onClick={() => setPreviewImage(newSuspect.mugshot)}
+                >
+                  <img 
+                    src={newSuspect.mugshot} 
+                    alt="Mugshot preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Eye className="w-4 h-4 text-foreground" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -448,11 +489,34 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
             <div className="space-y-1">
               <Label className="text-xs">Evidences (Discord URLs)</Label>
               <Textarea
-                placeholder="Paste evidence image URLs..."
+                placeholder="Paste evidence image URLs (one per line)..."
                 value={newSuspect.evidences}
                 onChange={(e) => setNewSuspect({ ...newSuspect, evidences: e.target.value })}
                 rows={2}
               />
+              {newSuspect.evidences && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {newSuspect.evidences.split('\n').filter(url => url.trim()).map((url, idx) => (
+                    <div 
+                      key={idx}
+                      className="relative w-12 h-12 rounded-lg overflow-hidden border border-border bg-background cursor-pointer group"
+                      onClick={() => setPreviewImage(url.trim())}
+                    >
+                      <img 
+                        src={url.trim()} 
+                        alt={`Evidence ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Eye className="w-3 h-3 text-foreground" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -618,6 +682,8 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
           </div>
         </div>
       </div>
+
+      <ImagePreviewModal imageUrl={previewImage} onClose={() => setPreviewImage(null)} />
     </div>
   );
 }
