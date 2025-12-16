@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Lock, User, BadgeCheck, Mail } from 'lucide-react';
+import { Shield, Lock, User, BadgeCheck, Mail, Key, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Auth() {
   const { user, loading, signIn, signUp } = useAuth();
@@ -23,6 +25,7 @@ export default function Auth() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [badgeNumber, setBadgeNumber] = useState('');
+  const [invitationCode, setInvitationCode] = useState('');
 
   if (loading) {
     return (
@@ -63,7 +66,23 @@ export default function Auth() {
       return;
     }
 
-    const { error } = await signUp(signupEmail, signupPassword, {
+    if (!invitationCode.trim()) {
+      toast.error('Please enter an invitation code');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate invitation code first
+    const { data: isValid, error: validateError } = await supabase
+      .rpc('validate_invitation_code', { code_input: invitationCode.trim() });
+
+    if (validateError || !isValid) {
+      toast.error('Invalid or expired invitation code');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const { error, data } = await signUp(signupEmail, signupPassword, {
       first_name: firstName,
       last_name: lastName,
       badge_number: badgeNumber || `NEW-${Date.now().toString().slice(-6)}`,
@@ -76,6 +95,13 @@ export default function Auth() {
         toast.error(error.message || 'Failed to create account');
       }
     } else {
+      // Consume the invitation code
+      if (data?.user?.id) {
+        await supabase.rpc('use_invitation_code', { 
+          code_input: invitationCode.trim(), 
+          user_id_input: data.user.id 
+        });
+      }
       toast.success('Account created! Welcome to the force.');
     }
 
@@ -152,6 +178,29 @@ export default function Auth() {
 
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
+                <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Authorized Personnel Only</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    Registration requires a valid invitation code from High Command.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-2">
+                  <Label htmlFor="invitation-code">Invitation Code</Label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="invitation-code"
+                      placeholder="Enter your invitation code"
+                      value={invitationCode}
+                      onChange={(e) => setInvitationCode(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="first-name">First Name</Label>

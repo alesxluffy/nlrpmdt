@@ -22,7 +22,7 @@ interface AuthContextType {
   role: AppRole | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, metadata: { first_name: string; last_name: string; badge_number: string }) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, metadata: { first_name: string; last_name: string; badge_number: string }) => Promise<{ error: Error | null; data: { user: User | null } | null }>;
   signOut: () => Promise<void>;
   canEditRoster: boolean;
   canEditSOP: boolean;
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string, 
     metadata: { first_name: string; last_name: string; badge_number: string }
   ) => {
-    const { error } = await supabase.auth.signUp({
+    const { error, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: metadata,
       },
     });
-    return { error };
+    return { error, data: data ? { user: data.user } : null };
   };
 
   const signOut = async () => {

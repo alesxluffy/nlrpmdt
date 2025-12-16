@@ -11,6 +11,7 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  Key,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ const navItems = [
   { path: '/incidents/new', icon: AlertTriangle, label: 'New Incident' },
   { path: '/incidents', icon: History, label: 'Incident History' },
   { path: '/roles', icon: Shield, label: 'Role Management', requiresHighCommand: true },
+  { path: '/invitations', icon: Key, label: 'Invitation Codes', requiresHighCommand: true },
 ];
 
 const roleLabels: Record<string, string> = {

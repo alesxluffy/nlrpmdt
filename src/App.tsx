@@ -12,6 +12,7 @@ import Roster from "./pages/Roster";
 import NewIncident from "./pages/NewIncident";
 import IncidentHistory from "./pages/IncidentHistory";
 import RoleManagement from "./pages/RoleManagement";
+import InvitationCodes from "./pages/InvitationCodes";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./components/layout/MainLayout";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/incidents/new" element={<MainLayout><NewIncident /></MainLayout>} />
             <Route path="/incidents" element={<MainLayout><IncidentHistory /></MainLayout>} />
             <Route path="/roles" element={<MainLayout><RoleManagement /></MainLayout>} />
+            <Route path="/invitations" element={<InvitationCodes />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
