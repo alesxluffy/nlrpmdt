@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import { VEHICLES, SUSPECT_STATUSES } from '@/data/incidentData';
-import { PENAL_CODES, PLEAD_OPTIONS, calculateTotals, type PenalCode, type ChargeWithCount } from '@/data/penalCodes';
+import { PENAL_CODES, PLEAD_OPTIONS, ENHANCEMENT_MULTIPLIERS, calculateTotals, type PenalCode, type ChargeWithCount, type EnhancementMultiplier } from '@/data/penalCodes';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -26,7 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Plus, Trash2, User, Car, Search, X, AlertTriangle, DollarSign, Clock } from 'lucide-react';
+import { Plus, Trash2, User, Car, Search, X, AlertTriangle, DollarSign, Clock, Percent } from 'lucide-react';
 import type { IncidentFormData } from '@/pages/NewIncident';
 
 interface SuspectData {
@@ -34,6 +35,7 @@ interface SuspectData {
   cid: string;
   mugshot: string;
   charges: ChargeWithCount[];
+  enhancements: EnhancementMultiplier[];
   confiscatedItems: string;
   evidences: string;
   plead: string;
@@ -54,6 +56,7 @@ const emptySuspect: SuspectData = {
   cid: '',
   mugshot: '',
   charges: [],
+  enhancements: [],
   confiscatedItems: '',
   evidences: '',
   plead: 'Not Guilty',
@@ -92,7 +95,7 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
       updatedCharges = [...newSuspect.charges, { charge, count: 1 }];
     }
 
-    const totals = calculateTotals(updatedCharges);
+    const totals = calculateTotals(updatedCharges, newSuspect.enhancements);
     setNewSuspect({
       ...newSuspect,
       charges: updatedCharges,
@@ -108,7 +111,7 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
       .map((c) => (c.charge.code === code ? { ...c, count: Math.max(0, c.count + delta) } : c))
       .filter((c) => c.count > 0);
 
-    const totals = calculateTotals(updatedCharges);
+    const totals = calculateTotals(updatedCharges, newSuspect.enhancements);
     setNewSuspect({
       ...newSuspect,
       charges: updatedCharges,
@@ -120,7 +123,7 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
 
   const removeCharge = (code: string) => {
     const updatedCharges = newSuspect.charges.filter((c) => c.charge.code !== code);
-    const totals = calculateTotals(updatedCharges);
+    const totals = calculateTotals(updatedCharges, newSuspect.enhancements);
     setNewSuspect({
       ...newSuspect,
       charges: updatedCharges,
@@ -130,11 +133,33 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
     });
   };
 
+  const toggleEnhancement = (enhancement: EnhancementMultiplier) => {
+    const exists = newSuspect.enhancements.find((e) => e.code === enhancement.code);
+    let updatedEnhancements: EnhancementMultiplier[];
+    
+    if (exists) {
+      updatedEnhancements = newSuspect.enhancements.filter((e) => e.code !== enhancement.code);
+    } else {
+      updatedEnhancements = [...newSuspect.enhancements, enhancement];
+    }
+
+    const totals = calculateTotals(newSuspect.charges, updatedEnhancements);
+    setNewSuspect({
+      ...newSuspect,
+      enhancements: updatedEnhancements,
+      jail: totals.totalJail === 'HUT' ? 0 : totals.totalJail,
+      fine: totals.totalFine === 'HUT' ? 0 : totals.totalFine,
+      isHUT: totals.isHUT,
+    });
+  };
+
   const addSuspect = () => {
     if (newSuspect.name) {
+      const enhancementStr = newSuspect.enhancements.map((e) => `${e.abbreviation} (${Math.round(e.multiplier * 100)}%)`).join(', ');
       const suspectForStorage = {
         name: newSuspect.name,
         charges: newSuspect.charges.map((c) => `${c.charge.code} ${c.charge.title}${c.count > 1 ? ` x${c.count}` : ''}`).join(', '),
+        enhancements: enhancementStr,
         status: newSuspect.status,
         cid: newSuspect.cid,
         mugshot: newSuspect.mugshot,
@@ -201,6 +226,11 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
                     </p>
                     {suspect.charges && (
                       <p className="text-xs text-muted-foreground max-w-md truncate">{suspect.charges}</p>
+                    )}
+                    {suspect.enhancements && (
+                      <p className="text-xs text-police-blue flex items-center gap-1">
+                        <Percent className="w-3 h-3" /> {suspect.enhancements}
+                      </p>
                     )}
                     <div className="flex gap-4 text-xs">
                       {suspect.isHUT ? (
@@ -362,6 +392,45 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
                   </Badge>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Enhancement Multipliers */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Percent className="w-4 h-4 text-police-blue" />
+              <Label className="text-xs">Enhancement Multipliers</Label>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 p-3 rounded-lg bg-background/30 border border-border/50">
+              {ENHANCEMENT_MULTIPLIERS.map((enhancement) => {
+                const isSelected = newSuspect.enhancements.some((e) => e.code === enhancement.code);
+                return (
+                  <div
+                    key={enhancement.code}
+                    className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                      isSelected ? 'bg-police-blue/20 border border-police-blue/50' : 'hover:bg-secondary/50'
+                    }`}
+                    onClick={() => toggleEnhancement(enhancement)}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleEnhancement(enhancement)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{enhancement.abbreviation}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{enhancement.title}</p>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] shrink-0">
+                      {Math.round(enhancement.multiplier * 100)}%
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+            {newSuspect.enhancements.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Total multiplier: {Math.round(newSuspect.enhancements.reduce((sum, e) => sum + e.multiplier, 0) * 100)}%
+              </p>
             )}
           </div>
 
