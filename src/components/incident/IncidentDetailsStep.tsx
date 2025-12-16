@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { LOCATIONS, PURSUIT_INITIATORS, PURSUIT_REASONS, PURSUIT_TYPES, PURSUIT_TERMINATIONS } from '@/data/incidentData';
+import { LOCATIONS, PURSUIT_INITIATORS, PURSUIT_REASONS, PURSUIT_TYPES, PURSUIT_TERMINATIONS, INCIDENT_TYPE_LOCATIONS, INCIDENT_TYPES } from '@/data/incidentData';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +24,18 @@ interface IncidentDetailsStepProps {
 
 export default function IncidentDetailsStep({ formData, updateFormData }: IncidentDetailsStepProps) {
   const [officerInput, setOfficerInput] = useState('');
+
+  const incidentType = INCIDENT_TYPES.find(t => t.value === formData.incidentType);
+  const hasFixedLocation = incidentType && 'fixedLocation' in incidentType;
+  const specificLocations = INCIDENT_TYPE_LOCATIONS[formData.incidentType];
+  const availableLocations = specificLocations || LOCATIONS;
+
+  // Auto-set fixed location for jewelry store
+  useEffect(() => {
+    if (hasFixedLocation && incidentType.fixedLocation && formData.location !== incidentType.fixedLocation) {
+      updateFormData({ location: incidentType.fixedLocation });
+    }
+  }, [formData.incidentType, hasFixedLocation]);
 
   const { data: officers } = useQuery({
     queryKey: ['officers-for-incident'],
@@ -54,21 +66,25 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
       {/* Location */}
       <div className="space-y-2">
         <Label>Location</Label>
-        <Select
-          value={formData.location}
-          onValueChange={(value) => updateFormData({ location: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select location" />
-          </SelectTrigger>
-          <SelectContent>
-            {LOCATIONS.map((loc) => (
-              <SelectItem key={loc} value={loc}>
-                {loc}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {hasFixedLocation ? (
+          <Input value={incidentType.fixedLocation} disabled className="bg-secondary/50" />
+        ) : (
+          <Select
+            value={formData.location}
+            onValueChange={(value) => updateFormData({ location: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select location" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableLocations.map((loc) => (
+                <SelectItem key={loc} value={loc}>
+                  {loc}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {formData.location === 'Custom Location' && (
