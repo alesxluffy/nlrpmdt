@@ -33,14 +33,25 @@ import { Search, Users, Shield, Filter, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 const rankColors: Record<string, string> = {
-  'Chief': 'bg-police-gold text-background',
-  'Assistant Chief': 'bg-police-gold/80 text-background',
+  'Chief of Police': 'bg-police-gold text-background',
+  'Assistant Chief of Police': 'bg-police-gold/90 text-background',
+  'Deputy Chief of Police': 'bg-police-gold/80 text-background',
+  'Sheriff': 'bg-police-gold text-background',
+  'Under Sheriff': 'bg-police-gold/90 text-background',
+  'Deputy Sheriff': 'bg-police-gold/80 text-background',
   'Captain': 'bg-police-blue text-primary-foreground',
   'Lieutenant': 'bg-police-blue/80 text-primary-foreground',
+  'Sergeant First Class': 'bg-primary/70 text-primary-foreground',
   'Sergeant': 'bg-primary/60 text-primary-foreground',
-  'Corporal': 'bg-primary/40 text-primary-foreground',
-  'Officer': 'bg-secondary text-foreground',
+  'Corporal': 'bg-primary/50 text-primary-foreground',
+  'Senior Trooper': 'bg-primary/40 text-primary-foreground',
+  'Trooper First Class': 'bg-primary/35 text-primary-foreground',
+  'Trooper': 'bg-secondary text-foreground',
+  'Senior Deputy': 'bg-primary/40 text-primary-foreground',
+  'Deputy First Class': 'bg-primary/35 text-primary-foreground',
+  'Deputy': 'bg-secondary text-foreground',
   'Cadet': 'bg-muted text-muted-foreground',
+  'Recruit': 'bg-muted text-muted-foreground',
 };
 
 const statusColors: Record<string, string> = {
@@ -51,9 +62,29 @@ const statusColors: Record<string, string> = {
   'Suspended': 'bg-destructive/20 text-destructive border-destructive/30',
 };
 
-const ranks = ['Chief', 'Assistant Chief', 'Captain', 'Lieutenant', 'Sergeant', 'Corporal', 'Officer', 'Cadet'];
+const ranks = [
+  'Chief of Police',
+  'Assistant Chief of Police',
+  'Deputy Chief of Police',
+  'Sheriff',
+  'Under Sheriff',
+  'Deputy Sheriff',
+  'Captain',
+  'Lieutenant',
+  'Sergeant First Class',
+  'Sergeant',
+  'Corporal',
+  'Senior Trooper',
+  'Trooper First Class',
+  'Trooper',
+  'Senior Deputy',
+  'Deputy First Class',
+  'Deputy',
+  'Cadet',
+  'Recruit',
+];
 const statuses = ['Active', 'On Duty', 'Off Duty', 'LOA', 'Suspended'];
-const divisions = ['Patrol', 'Detectives', 'SWAT', 'Traffic', 'K-9', 'Training'];
+const divisions = ['SASP', 'BCSO', 'SAHP', 'Patrol', 'Detectives', 'SWAT', 'Traffic', 'K-9', 'Training'];
 
 export default function Roster() {
   const { canEditRoster } = useAuth();
@@ -63,6 +94,7 @@ export default function Roster() {
   const [rankFilter, setRankFilter] = useState('all');
   const [editingOfficer, setEditingOfficer] = useState<any>(null);
   const [editForm, setEditForm] = useState({
+    badge_number: '',
     rank: '',
     division: '',
     status: '',
@@ -102,6 +134,7 @@ export default function Roster() {
   const handleEdit = (officer: any) => {
     setEditingOfficer(officer);
     setEditForm({
+      badge_number: officer.badge_number || '',
       rank: officer.rank || 'Cadet',
       division: officer.division || 'Patrol',
       status: officer.status || 'Active',
@@ -282,6 +315,15 @@ export default function Roster() {
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Badge Number</Label>
+              <Input
+                value={editForm.badge_number}
+                onChange={(e) => setEditForm(f => ({ ...f, badge_number: e.target.value }))}
+                placeholder="Enter badge number"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label>Rank</Label>
               <Select value={editForm.rank} onValueChange={(v) => setEditForm(f => ({ ...f, rank: v }))}>
