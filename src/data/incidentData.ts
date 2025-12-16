@@ -1,6 +1,6 @@
 export const INCIDENT_TYPES = [
   { value: 'bank', label: 'Bank Robbery', icon: '🏦' },
-  { value: 'jewelry', label: 'Jewelry Store', icon: '💎' },
+  { value: 'jewelry', label: 'Jewelry Store', icon: '💎', fixedLocation: 'Vangelico Jewelry Store' },
   { value: 'store', label: 'Store Robbery', icon: '🏪' },
   { value: 'drugs', label: 'Drug Operations', icon: '💊' },
   { value: 'seizure', label: 'Seizure', icon: '📦' },
@@ -11,6 +11,41 @@ export const INCIDENT_TYPES = [
   { value: 'civilian', label: 'Civilian Incident', icon: '👤' },
   { value: 'cadet', label: 'Cadet Report', icon: '📝' },
 ];
+
+export const INCIDENT_TYPE_LOCATIONS: Record<string, string[]> = {
+  bank: [
+    'Fleeca Bank (Legion Square)',
+    'Fleeca Bank (Del Perro)',
+    'Fleeca Bank (Hawick)',
+    'Fleeca Bank (Banham Canyon)',
+    'Fleeca Bank (Harmony)',
+    'Fleeca Bank (Paleto Bay)',
+    'Pacific Standard',
+    'Fleeca Bank (Pinkcage)',
+  ],
+  store: [
+    '24/7 (Strawberry)',
+    '24/7 (Downtown Vinewood)',
+    '24/7 (Tataviam Mountains)',
+    '24/7 (Banham Canyon)',
+    '24/7 (Chumash)',
+    '24/7 (Harmony)',
+    '24/7 (Grand Senora)',
+    '24/7 (Sandy Shores)',
+    '24/7 (Mount Chiliad)',
+    'LTD (Davis)',
+    'LTD (Little Seoul)',
+    'LTD (Mirror Park)',
+    'LTD (Richman Glen)',
+    'LTD (Grapeseed)',
+    "Rob's Liquor (Murrieta Heights)",
+    "Rob's Liquor (Vespucci Canals)",
+    "Rob's Liquor (Morningwood)",
+    "Rob's Liquor (Banham Canyon)",
+    "Rob's Liquor (Grand Senora)",
+    'Liquor Ace (Sandy Shores)',
+  ],
+};
 
 export const LOCATIONS = [
   'Paleto Bay',
