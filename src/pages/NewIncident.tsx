@@ -14,6 +14,21 @@ import IncidentDetailsStep from '@/components/incident/IncidentDetailsStep';
 import IncidentSuspectsStep from '@/components/incident/IncidentSuspectsStep';
 import IncidentReviewStep from '@/components/incident/IncidentReviewStep';
 
+export interface SuspectFormData {
+  name: string;
+  cid: string;
+  mugshot: string;
+  charges: string;
+  confiscatedItems: string;
+  evidences: string;
+  plead: string;
+  fine: number;
+  jail: number;
+  tag: string;
+  status: string;
+  isHUT: boolean;
+}
+
 export interface IncidentFormData {
   incidentType: string;
   location: string;
@@ -25,11 +40,7 @@ export interface IncidentFormData {
   pursuitReason: string;
   pursuitType: string;
   pursuitTermination: string;
-  suspects: Array<{
-    name: string;
-    charges: string;
-    status: string;
-  }>;
+  suspects: SuspectFormData[];
   vehicles: Array<{
     vehicle: string;
     plate: string;
@@ -106,7 +117,16 @@ export default function NewIncident() {
               incident_id: incident.id,
               name: s.name,
               charges: s.charges || null,
-              status: s.status || 'At Large',
+              status: s.status || 'In Custody',
+              cid: s.cid || null,
+              mugshot: s.mugshot || null,
+              confiscated_items: s.confiscatedItems || null,
+              evidences: s.evidences || null,
+              plead: s.plead || 'Not Guilty',
+              fine: s.isHUT ? 0 : (s.fine || 0),
+              jail: s.isHUT ? 0 : (s.jail || 0),
+              tag: s.tag || null,
+              is_hut: s.isHUT || false,
             }))
           );
         if (suspectsError) throw suspectsError;
@@ -162,7 +182,23 @@ export default function NewIncident() {
     if (data.suspects.length > 0) {
       report += `**Suspects:**\n`;
       data.suspects.forEach((s, i) => {
-        report += `${i + 1}. ${s.name} - ${s.status}${s.charges ? ` (Charges: ${s.charges})` : ''}\n`;
+        report += `\n**Suspect ${i + 1}:**\n`;
+        if (s.mugshot) report += `Mugshot: ${s.mugshot}\n`;
+        report += `Name: ${s.name}\n`;
+        if (s.cid) report += `CID: ${s.cid}\n`;
+        report += `Charges: ${s.charges || 'None'}\n`;
+        if (s.confiscatedItems) report += `Confiscated Items: ${s.confiscatedItems}\n`;
+        if (s.evidences) report += `Evidences: ${s.evidences}\n`;
+        report += `Plead: ${s.plead}\n`;
+        if (s.isHUT) {
+          report += `Fine: HUT\n`;
+          report += `Jail: HUT\n`;
+        } else {
+          report += `Fine: $${s.fine?.toLocaleString() || 0}\n`;
+          report += `Jail: ${s.jail || 0} months\n`;
+        }
+        if (s.tag) report += `Tag: ${s.tag}\n`;
+        report += `Status: ${s.status}\n`;
       });
       report += '\n';
     }

@@ -46,24 +46,51 @@ export type Database = {
       incident_suspects: {
         Row: {
           charges: string | null
+          cid: string | null
+          confiscated_items: string | null
+          evidences: string | null
+          fine: number | null
           id: string
           incident_id: string | null
+          is_hut: boolean | null
+          jail: number | null
+          mugshot: string | null
           name: string
+          plead: string | null
           status: string | null
+          tag: string | null
         }
         Insert: {
           charges?: string | null
+          cid?: string | null
+          confiscated_items?: string | null
+          evidences?: string | null
+          fine?: number | null
           id?: string
           incident_id?: string | null
+          is_hut?: boolean | null
+          jail?: number | null
+          mugshot?: string | null
           name: string
+          plead?: string | null
           status?: string | null
+          tag?: string | null
         }
         Update: {
           charges?: string | null
+          cid?: string | null
+          confiscated_items?: string | null
+          evidences?: string | null
+          fine?: number | null
           id?: string
           incident_id?: string | null
+          is_hut?: boolean | null
+          jail?: number | null
+          mugshot?: string | null
           name?: string
+          plead?: string | null
           status?: string | null
+          tag?: string | null
         }
         Relationships: [
           {
