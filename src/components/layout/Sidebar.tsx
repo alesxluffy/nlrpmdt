@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 
 const navItems = [
@@ -21,12 +22,29 @@ const navItems = [
   { path: '/roster', icon: Users, label: 'Roster' },
   { path: '/incidents/new', icon: AlertTriangle, label: 'New Incident' },
   { path: '/incidents', icon: History, label: 'Incident History' },
+  { path: '/roles', icon: Shield, label: 'Role Management', requiresHighCommand: true },
 ];
 
+const roleLabels: Record<string, string> = {
+  patrol: 'Patrol',
+  ftd: 'FTD',
+  high_command: 'High Command',
+};
+
+const roleColors: Record<string, string> = {
+  patrol: 'bg-secondary text-foreground',
+  ftd: 'bg-police-blue text-primary-foreground',
+  high_command: 'bg-police-gold text-background',
+};
+
 export default function Sidebar() {
-  const { profile, signOut } = useAuth();
+  const { profile, role, signOut, canManageRoles } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+
+  const visibleNavItems = navItems.filter(item => 
+    !item.requiresHighCommand || canManageRoles
+  );
 
   return (
     <aside
@@ -52,7 +70,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive = location.pathname === item.path || 
             (item.path !== '/' && location.pathname.startsWith(item.path));
           
@@ -83,6 +101,11 @@ export default function Sidebar() {
             <p className="text-xs text-muted-foreground truncate">
               {profile.badge_number} • {profile.rank}
             </p>
+            {role && (
+              <Badge className={cn('mt-1', roleColors[role] || roleColors.patrol)}>
+                {roleLabels[role] || role}
+              </Badge>
+            )}
           </div>
         )}
         

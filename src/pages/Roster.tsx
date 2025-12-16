@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/hooks/useAuth';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -19,7 +21,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Users, Shield, Filter } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Search, Users, Shield, Filter, Pencil } from 'lucide-react';
+import { toast } from 'sonner';
 
 const rankColors: Record<string, string> = {
   'Chief': 'bg-police-gold text-background',
@@ -40,10 +51,22 @@ const statusColors: Record<string, string> = {
   'Suspended': 'bg-destructive/20 text-destructive border-destructive/30',
 };
 
+const ranks = ['Chief', 'Assistant Chief', 'Captain', 'Lieutenant', 'Sergeant', 'Corporal', 'Officer', 'Cadet'];
+const statuses = ['Active', 'On Duty', 'Off Duty', 'LOA', 'Suspended'];
+const divisions = ['Patrol', 'Detectives', 'SWAT', 'Traffic', 'K-9', 'Training'];
+
 export default function Roster() {
+  const { canEditRoster } = useAuth();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [divisionFilter, setDivisionFilter] = useState('all');
   const [rankFilter, setRankFilter] = useState('all');
+  const [editingOfficer, setEditingOfficer] = useState<any>(null);
+  const [editForm, setEditForm] = useState({
+    rank: '',
+    division: '',
+    status: '',
+  });
 
   const { data: officers, isLoading } = useQuery({
     queryKey: ['officers-roster'],
@@ -58,8 +81,44 @@ export default function Roster() {
     },
   });
 
-  const divisions = [...new Set(officers?.map(o => o.division).filter(Boolean) || [])];
-  const ranks = [...new Set(officers?.map(o => o.rank).filter(Boolean) || [])];
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['officers-roster'] });
+      toast.success('Officer updated successfully');
+      setEditingOfficer(null);
+    },
+    onError: () => {
+      toast.error('Failed to update officer');
+    },
+  });
+
+  const handleEdit = (officer: any) => {
+    setEditingOfficer(officer);
+    setEditForm({
+      rank: officer.rank || 'Cadet',
+      division: officer.division || 'Patrol',
+      status: officer.status || 'Active',
+    });
+  };
+
+  const handleSave = () => {
+    if (editingOfficer) {
+      updateMutation.mutate({
+        id: editingOfficer.id,
+        updates: editForm,
+      });
+    }
+  };
+
+  const uniqueDivisions = [...new Set(officers?.map(o => o.division).filter(Boolean) || [])];
+  const uniqueRanks = [...new Set(officers?.map(o => o.rank).filter(Boolean) || [])];
 
   const filteredOfficers = officers?.filter(officer => {
     const matchesSearch = 
@@ -109,7 +168,7 @@ export default function Roster() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Divisions</SelectItem>
-                  {divisions.map(division => (
+                  {uniqueDivisions.map(division => (
                     <SelectItem key={division} value={division!}>
                       {division}
                     </SelectItem>
@@ -124,7 +183,7 @@ export default function Roster() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Ranks</SelectItem>
-                  {ranks.map(rank => (
+                  {uniqueRanks.map(rank => (
                     <SelectItem key={rank} value={rank!}>
                       {rank}
                     </SelectItem>
@@ -156,6 +215,7 @@ export default function Roster() {
                   <TableHead className="text-muted-foreground">Rank</TableHead>
                   <TableHead className="text-muted-foreground">Division</TableHead>
                   <TableHead className="text-muted-foreground">Status</TableHead>
+                  {canEditRoster && <TableHead className="text-muted-foreground w-20">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -183,6 +243,17 @@ export default function Roster() {
                         {officer.status || 'Active'}
                       </Badge>
                     </TableCell>
+                    {canEditRoster && (
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(officer)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -200,6 +271,70 @@ export default function Roster() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingOfficer} onOpenChange={() => setEditingOfficer(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Edit {editingOfficer?.first_name} {editingOfficer?.last_name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Rank</Label>
+              <Select value={editForm.rank} onValueChange={(v) => setEditForm(f => ({ ...f, rank: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ranks.map(rank => (
+                    <SelectItem key={rank} value={rank}>{rank}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Division</Label>
+              <Select value={editForm.division} onValueChange={(v) => setEditForm(f => ({ ...f, division: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {divisions.map(division => (
+                    <SelectItem key={division} value={division}>{division}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={editForm.status} onValueChange={(v) => setEditForm(f => ({ ...f, status: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map(status => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingOfficer(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
