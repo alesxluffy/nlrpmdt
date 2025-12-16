@@ -156,6 +156,30 @@ export const PENAL_CODES: PenalCode[] = [
   { code: 'P.C. 1002', title: 'Gaming', description: 'Dealing, playing or betting at, or against, any card, banking, or percentage game with dice, cards, or any device for money, outside of a state approved card-room or Diamond Casino.', jail: 0, fine: 0, flags: [] },
 ];
 
+export interface EnhancementMultiplier {
+  code: string;
+  abbreviation: string;
+  title: string;
+  description: string;
+  multiplier: number; // percentage as decimal (e.g., 0.25 for 25%)
+  seize: boolean;
+}
+
+export const ENHANCEMENT_MULTIPLIERS: EnhancementMultiplier[] = [
+  { code: 'P.C. 1101', abbreviation: 'ACP', title: 'Accomplice', description: 'Any person not present when the crime itself is committed, but has knowledge of the crime before or after the fact, and may assist in its commission.', multiplier: 0.25, seize: true },
+  { code: 'P.C. 1102', abbreviation: 'ACC', title: 'Accessory', description: 'Any person who aids in the commission of a crime without prior knowledge of the crime being committed.', multiplier: 0.75, seize: true },
+  { code: 'P.C. 1103', abbreviation: 'AAA', title: 'Aiding and Abetting', description: 'Any person who aids in the commission of a crime shall be given the same punishment as if the offense was committed.', multiplier: 1.0, seize: true },
+  { code: 'P.C. 1104', abbreviation: 'APP', title: 'Applicability', description: 'Charges labelled with Per as defined in TITLE 1. can be stacked, taking care to only add additional times and fines if it states PER next to the time and fines.', multiplier: 1.0, seize: true },
+  { code: 'P.C. 1105', abbreviation: 'ATT', title: 'Attempt', description: 'A person who attempts to commit any crime but fails, is prevented, or is intercepted, shall be given the same punishment as if the offense was committed.', multiplier: 1.0, seize: true },
+  { code: 'P.C. 1106', abbreviation: 'CON', title: 'Conspiracy', description: 'A person who conspires to commit any crime shall be given the same punishment as if the offense was committed.', multiplier: 1.0, seize: true },
+  { code: 'P.C. 1107', abbreviation: 'SOL', title: 'Soliciting', description: 'A person who solicits for the commission or perpetration of any crime shall be given similar punishments as if the offense was committed.', multiplier: 0.5, seize: true },
+  { code: 'P.C. 1108', abbreviation: 'GE', title: 'Gang Enhancement', description: 'Any criminal activity with 2 or more known gang members involved shall be given a harsher total time and fine to deter future offenses.', multiplier: 1.5, seize: false },
+  { code: 'P.C. 1109', abbreviation: 'PP', title: 'Protected Persons', description: 'Any criminal activity targeted at a public servant or peace officer shall be given a harsher total time and fine to deter future offenses.', multiplier: 1.2, seize: false },
+  { code: 'P.C. 1110', abbreviation: 'PM', title: 'Public Menace', description: 'Any person convicted of a serious felony who previously has been convicted of a serious felony is subject to an increase on their sentence. (Manually add 600 months)', multiplier: 1.0, seize: false },
+  { code: 'P.C. 1111', abbreviation: 'ITS', title: 'Intent to Sell', description: 'A person who shows clear intent to sell; drugs, contraband or weaponry shall be given a harsher total time and fine to deter future offences.', multiplier: 1.5, seize: true },
+  { code: 'P.C. 1112', abbreviation: 'P-Prop', title: 'Protected Property', description: 'Any criminal activity targeted at a public servant\'s or peace officer\'s property or government property shall be given a harsher total time and fine to deter future offences.', multiplier: 1.2, seize: false },
+];
+
 export const PLEAD_OPTIONS = ['Guilty', 'Not Guilty', 'No Contest'];
 
 export interface ChargeWithCount {
@@ -163,7 +187,10 @@ export interface ChargeWithCount {
   count: number;
 }
 
-export function calculateTotals(charges: ChargeWithCount[]): { totalJail: number | 'HUT'; totalFine: number | 'HUT'; isHUT: boolean } {
+export function calculateTotals(
+  charges: ChargeWithCount[],
+  selectedEnhancements: EnhancementMultiplier[] = []
+): { totalJail: number | 'HUT'; totalFine: number | 'HUT'; isHUT: boolean } {
   let totalJail = 0;
   let totalFine = 0;
   let isHUT = false;
@@ -176,6 +203,13 @@ export function calculateTotals(charges: ChargeWithCount[]): { totalJail: number
       totalJail += charge.jail * multiplier;
       totalFine += charge.fine * multiplier;
     }
+  }
+
+  // Apply enhancement multipliers (they stack additively)
+  if (selectedEnhancements.length > 0 && !isHUT) {
+    const totalMultiplier = selectedEnhancements.reduce((sum, e) => sum + e.multiplier, 0);
+    totalJail = Math.round(totalJail * totalMultiplier);
+    totalFine = Math.round(totalFine * totalMultiplier);
   }
 
   return {
