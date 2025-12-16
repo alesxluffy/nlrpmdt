@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Copy, Check, FileText } from 'lucide-react';
+import { Copy, Check, FileText, User, DollarSign, Clock, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { INCIDENT_TYPES } from '@/data/incidentData';
 import type { IncidentFormData } from '@/pages/NewIncident';
@@ -16,6 +16,10 @@ export default function IncidentReviewStep({ formData, generateReport }: Inciden
   const [copied, setCopied] = useState(false);
   const report = generateReport(formData);
   const incidentType = INCIDENT_TYPES.find(t => t.value === formData.incidentType);
+
+  const totalFine = formData.suspects.reduce((sum, s) => sum + (s.isHUT ? 0 : (s.fine || 0)), 0);
+  const totalJail = formData.suspects.reduce((sum, s) => sum + (s.isHUT ? 0 : (s.jail || 0)), 0);
+  const hasHUT = formData.suspects.some(s => s.isHUT);
 
   const copyToClipboard = async () => {
     try {
@@ -71,29 +75,91 @@ export default function IncidentReviewStep({ formData, generateReport }: Inciden
         </div>
       </div>
 
+      {/* Totals Summary */}
+      {formData.suspects.length > 0 && (
+        <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+          <p className="text-sm font-medium text-foreground mb-3">Sentencing Summary</p>
+          <div className="flex flex-wrap gap-6">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm">{formData.suspects.length} Suspect(s)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-police-blue" />
+              <span className="text-sm">
+                Total Jail: {hasHUT && <span className="text-police-red font-bold">HUT + </span>}
+                {totalJail} months
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-green-500" />
+              <span className="text-sm">
+                Total Fine: {hasHUT && <span className="text-police-red font-bold">HUT + </span>}
+                ${totalFine.toLocaleString()}
+              </span>
+            </div>
+            {hasHUT && (
+              <div className="flex items-center gap-2 text-police-red">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="text-sm font-bold">Hold Until Trial</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Suspects Detail */}
+      {formData.suspects.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-foreground">Suspects Detail</p>
+          {formData.suspects.map((suspect, index) => (
+            <div key={index} className="p-4 rounded-lg bg-secondary/20 border border-border space-y-2">
+              <div className="flex items-start gap-3">
+                {suspect.mugshot && (
+                  <img
+                    src={suspect.mugshot}
+                    alt="Mugshot"
+                    className="w-16 h-16 rounded-lg object-cover border border-border"
+                  />
+                )}
+                <div className="flex-1 space-y-1">
+                  <p className="font-medium text-foreground">{suspect.name}</p>
+                  {suspect.cid && <p className="text-xs text-muted-foreground">CID: {suspect.cid}</p>}
+                  <p className="text-xs text-muted-foreground">
+                    {suspect.status} • {suspect.plead}
+                    {suspect.tag && ` • Tag: ${suspect.tag}`}
+                  </p>
+                </div>
+                <div className="text-right">
+                  {suspect.isHUT ? (
+                    <span className="text-police-red font-bold text-sm">HUT</span>
+                  ) : (
+                    <>
+                      <p className="text-sm text-police-blue">{suspect.jail} months</p>
+                      <p className="text-sm text-green-500">${suspect.fine?.toLocaleString()}</p>
+                    </>
+                  )}
+                </div>
+              </div>
+              {suspect.charges && (
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">Charges:</span> {suspect.charges}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Report Preview */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-primary" />
           <Label>Generated Report</Label>
         </div>
-        <div className="p-4 rounded-lg bg-background border border-border font-mono text-sm whitespace-pre-wrap">
+        <div className="p-4 rounded-lg bg-background border border-border font-mono text-sm whitespace-pre-wrap max-h-[400px] overflow-y-auto">
           {report}
         </div>
-      </div>
-
-      {/* Notes */}
-      <div className="space-y-2">
-        <Label>Additional Notes (Optional)</Label>
-        <Textarea
-          placeholder="Add any additional notes before submitting..."
-          value={formData.notes}
-          onChange={(e) => {
-            // This is read-only in review, but showing for reference
-          }}
-          rows={3}
-          disabled
-        />
       </div>
 
       <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
