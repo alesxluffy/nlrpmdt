@@ -160,3 +160,20 @@ export const SUSPECT_STATUSES = [
   'Hospital',
   'Released',
 ];
+
+export const EVIDENCE_TYPES = [
+  'Scene Photo',
+  'DNA',
+  'GSR (Gunshot Residue)',
+  'Fingerprint',
+  'Drug Test',
+  'Breathalyzer',
+  'Blood Sample',
+  'CCTV Footage',
+  'Witness Statement',
+  'Weapon',
+  'Shell Casings',
+  'Vehicle Forensics',
+  'Phone Records',
+  'Body Cam Footage',
+];

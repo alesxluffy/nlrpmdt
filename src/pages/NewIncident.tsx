@@ -29,12 +29,19 @@ export interface SuspectFormData {
   isHUT: boolean;
 }
 
+export interface CitizenInvolved {
+  fullName: string;
+  phoneNumber: string;
+}
+
 export interface IncidentFormData {
   incidentType: string;
   location: string;
   customLocation: string;
   description: string;
   officers: string[];
+  citizensInvolved: CitizenInvolved[];
+  incidentEvidences: string[];
   pursuitOccurred: boolean;
   pursuitInitiator: string;
   pursuitReason: string;
@@ -61,6 +68,8 @@ export default function NewIncident() {
     customLocation: '',
     description: '',
     officers: [],
+    citizensInvolved: [],
+    incidentEvidences: [],
     pursuitOccurred: false,
     pursuitInitiator: '',
     pursuitReason: '',
@@ -177,6 +186,18 @@ export default function NewIncident() {
       report += `- Reason: ${data.pursuitReason}\n`;
       report += `- Type: ${data.pursuitType}\n`;
       report += `- Termination: ${data.pursuitTermination}\n\n`;
+    }
+
+    if (data.citizensInvolved.length > 0) {
+      report += `**Citizens Involved:**\n`;
+      data.citizensInvolved.forEach((c, i) => {
+        report += `${i + 1}. ${c.fullName} - Phone: ${c.phoneNumber}\n`;
+      });
+      report += '\n';
+    }
+
+    if (data.incidentEvidences.length > 0) {
+      report += `**Evidence Collected:**\n${data.incidentEvidences.join(', ')}\n\n`;
     }
     
     if (data.suspects.length > 0) {

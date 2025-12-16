@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { LOCATIONS, PURSUIT_INITIATORS, PURSUIT_REASONS, PURSUIT_TYPES, PURSUIT_TERMINATIONS, INCIDENT_TYPE_LOCATIONS, INCIDENT_TYPES } from '@/data/incidentData';
+import { LOCATIONS, PURSUIT_INITIATORS, PURSUIT_REASONS, PURSUIT_TYPES, PURSUIT_TERMINATIONS, INCIDENT_TYPE_LOCATIONS, INCIDENT_TYPES, EVIDENCE_TYPES } from '@/data/incidentData';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -14,8 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X } from 'lucide-react';
-import type { IncidentFormData } from '@/pages/NewIncident';
+import { X, Plus } from 'lucide-react';
+import type { IncidentFormData, CitizenInvolved } from '@/pages/NewIncident';
 
 interface IncidentDetailsStepProps {
   formData: IncidentFormData;
@@ -24,6 +26,7 @@ interface IncidentDetailsStepProps {
 
 export default function IncidentDetailsStep({ formData, updateFormData }: IncidentDetailsStepProps) {
   const [officerInput, setOfficerInput] = useState('');
+  const [newCitizen, setNewCitizen] = useState<CitizenInvolved>({ fullName: '', phoneNumber: '' });
 
   const incidentType = INCIDENT_TYPES.find(t => t.value === formData.incidentType);
   const hasFixedLocation = incidentType && 'fixedLocation' in incidentType;
@@ -57,6 +60,31 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
 
   const removeOfficer = (name: string) => {
     updateFormData({ officers: formData.officers.filter(o => o !== name) });
+  };
+
+  const addCitizen = () => {
+    if (newCitizen.fullName && newCitizen.phoneNumber) {
+      updateFormData({ citizensInvolved: [...formData.citizensInvolved, newCitizen] });
+      setNewCitizen({ fullName: '', phoneNumber: '' });
+    }
+  };
+
+  const removeCitizen = (index: number) => {
+    updateFormData({ 
+      citizensInvolved: formData.citizensInvolved.filter((_, i) => i !== index) 
+    });
+  };
+
+  const toggleEvidence = (evidence: string) => {
+    if (formData.incidentEvidences.includes(evidence)) {
+      updateFormData({ 
+        incidentEvidences: formData.incidentEvidences.filter(e => e !== evidence) 
+      });
+    } else {
+      updateFormData({ 
+        incidentEvidences: [...formData.incidentEvidences, evidence] 
+      });
+    }
   };
 
   return (
@@ -139,6 +167,92 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
                 <button
                   type="button"
                   onClick={() => removeOfficer(officer)}
+                  className="ml-1 hover:text-destructive"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Citizens Involved */}
+      <div className="space-y-4 p-4 rounded-lg bg-secondary/30 border border-border">
+        <Label className="text-base font-medium">Citizens Involved</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Input
+            placeholder="Full Name"
+            value={newCitizen.fullName}
+            onChange={(e) => setNewCitizen(prev => ({ ...prev, fullName: e.target.value }))}
+          />
+          <div className="flex gap-2">
+            <Input
+              placeholder="Phone Number"
+              value={newCitizen.phoneNumber}
+              onChange={(e) => setNewCitizen(prev => ({ ...prev, phoneNumber: e.target.value }))}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={addCitizen}
+              disabled={!newCitizen.fullName || !newCitizen.phoneNumber}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {formData.citizensInvolved.length > 0 && (
+          <div className="space-y-2 mt-3">
+            {formData.citizensInvolved.map((citizen, index) => (
+              <div key={index} className="flex items-center justify-between p-2 bg-background rounded border border-border">
+                <span className="text-sm">
+                  {citizen.fullName} - <span className="text-muted-foreground">{citizen.phoneNumber}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeCitizen(index)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Evidence Collection */}
+      <div className="space-y-4 p-4 rounded-lg bg-secondary/30 border border-border">
+        <Label className="text-base font-medium">Evidence Collected</Label>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {EVIDENCE_TYPES.map((evidence) => (
+            <div key={evidence} className="flex items-center space-x-2">
+              <Checkbox
+                id={evidence}
+                checked={formData.incidentEvidences.includes(evidence)}
+                onCheckedChange={() => toggleEvidence(evidence)}
+              />
+              <label
+                htmlFor={evidence}
+                className="text-sm cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {evidence}
+              </label>
+            </div>
+          ))}
+        </div>
+        
+        {formData.incidentEvidences.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
+            {formData.incidentEvidences.map((evidence) => (
+              <Badge key={evidence} variant="secondary" className="gap-1">
+                {evidence}
+                <button
+                  type="button"
+                  onClick={() => toggleEvidence(evidence)}
                   className="ml-1 hover:text-destructive"
                 >
                   <X className="w-3 h-3" />
