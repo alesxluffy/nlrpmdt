@@ -71,13 +71,13 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
   const [chargeSearch, setChargeSearch] = useState('');
 
   const filteredCharges = useMemo(() => {
-    if (!chargeSearch) return PENAL_CODES.slice(0, 20);
+    if (!chargeSearch) return PENAL_CODES;
     const search = chargeSearch.toLowerCase();
     return PENAL_CODES.filter(
       (pc) =>
         pc.code.toLowerCase().includes(search) ||
         pc.title.toLowerCase().includes(search)
-    ).slice(0, 20);
+    );
   }, [chargeSearch]);
 
   const addCharge = (charge: PenalCode) => {
