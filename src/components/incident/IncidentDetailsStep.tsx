@@ -16,8 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Plus } from 'lucide-react';
-import type { IncidentFormData, CitizenInvolved } from '@/pages/NewIncident';
+import { X, Plus, Image } from 'lucide-react';
+import type { IncidentFormData, CitizenInvolved, EvidenceItem } from '@/pages/NewIncident';
 
 interface IncidentDetailsStepProps {
   formData: IncidentFormData;
@@ -75,16 +75,32 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
     });
   };
 
-  const toggleEvidence = (evidence: string) => {
-    if (formData.incidentEvidences.includes(evidence)) {
+  const isEvidenceSelected = (evidenceType: string) => {
+    return formData.incidentEvidences.some(e => e.type === evidenceType);
+  };
+
+  const toggleEvidence = (evidenceType: string) => {
+    if (isEvidenceSelected(evidenceType)) {
       updateFormData({ 
-        incidentEvidences: formData.incidentEvidences.filter(e => e !== evidence) 
+        incidentEvidences: formData.incidentEvidences.filter(e => e.type !== evidenceType) 
       });
     } else {
       updateFormData({ 
-        incidentEvidences: [...formData.incidentEvidences, evidence] 
+        incidentEvidences: [...formData.incidentEvidences, { type: evidenceType, url: '' }] 
       });
     }
+  };
+
+  const updateEvidenceUrl = (evidenceType: string, url: string) => {
+    updateFormData({
+      incidentEvidences: formData.incidentEvidences.map(e => 
+        e.type === evidenceType ? { ...e, url } : e
+      )
+    });
+  };
+
+  const getEvidenceUrl = (evidenceType: string) => {
+    return formData.incidentEvidences.find(e => e.type === evidenceType)?.url || '';
   };
 
   return (
@@ -227,38 +243,77 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
       {/* Evidence Collection */}
       <div className="space-y-4 p-4 rounded-lg bg-secondary/30 border border-border">
         <Label className="text-base font-medium">Evidence Collected</Label>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="space-y-4">
           {EVIDENCE_TYPES.map((evidence) => (
-            <div key={evidence} className="flex items-center space-x-2">
-              <Checkbox
-                id={evidence}
-                checked={formData.incidentEvidences.includes(evidence)}
-                onCheckedChange={() => toggleEvidence(evidence)}
-              />
-              <label
-                htmlFor={evidence}
-                className="text-sm cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {evidence}
-              </label>
+            <div key={evidence} className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={evidence}
+                  checked={isEvidenceSelected(evidence)}
+                  onCheckedChange={() => toggleEvidence(evidence)}
+                />
+                <label
+                  htmlFor={evidence}
+                  className="text-sm cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {evidence}
+                </label>
+              </div>
+              
+              {isEvidenceSelected(evidence) && (
+                <div className="ml-6 space-y-2">
+                  <Input
+                    placeholder={`${evidence} screenshot URL (Discord, Imgur, etc.)`}
+                    value={getEvidenceUrl(evidence)}
+                    onChange={(e) => updateEvidenceUrl(evidence, e.target.value)}
+                    className="text-sm"
+                  />
+                  {getEvidenceUrl(evidence) && (
+                    <div className="relative w-full max-w-xs rounded-lg overflow-hidden border border-border bg-background">
+                      <img 
+                        src={getEvidenceUrl(evidence)} 
+                        alt={`${evidence} preview`}
+                        className="w-full h-auto max-h-48 object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
         
         {formData.incidentEvidences.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
-            {formData.incidentEvidences.map((evidence) => (
-              <Badge key={evidence} variant="secondary" className="gap-1">
-                {evidence}
-                <button
-                  type="button"
-                  onClick={() => toggleEvidence(evidence)}
-                  className="ml-1 hover:text-destructive"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
-            ))}
+          <div className="mt-4 pt-4 border-t border-border">
+            <Label className="text-sm text-muted-foreground mb-2 block">Collected Evidence Summary</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {formData.incidentEvidences.filter(e => e.url).map((evidence) => (
+                <div key={evidence.type} className="flex items-start gap-2 p-2 bg-background rounded border border-border">
+                  <Image className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium block">{evidence.type}</span>
+                    <a 
+                      href={evidence.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline truncate block"
+                    >
+                      {evidence.url}
+                    </a>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleEvidence(evidence.type)}
+                    className="text-muted-foreground hover:text-destructive flex-shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

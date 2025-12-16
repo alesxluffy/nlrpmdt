@@ -34,6 +34,11 @@ export interface CitizenInvolved {
   phoneNumber: string;
 }
 
+export interface EvidenceItem {
+  type: string;
+  url: string;
+}
+
 export interface IncidentFormData {
   incidentType: string;
   location: string;
@@ -41,7 +46,7 @@ export interface IncidentFormData {
   description: string;
   officers: string[];
   citizensInvolved: CitizenInvolved[];
-  incidentEvidences: string[];
+  incidentEvidences: EvidenceItem[];
   pursuitOccurred: boolean;
   pursuitInitiator: string;
   pursuitReason: string;
@@ -197,7 +202,11 @@ export default function NewIncident() {
     }
 
     if (data.incidentEvidences.length > 0) {
-      report += `**Evidence Collected:**\n${data.incidentEvidences.join(', ')}\n\n`;
+      report += `**Evidence Collected:**\n`;
+      data.incidentEvidences.forEach((e) => {
+        report += `- ${e.type}: ${e.url}\n`;
+      });
+      report += '\n';
     }
     
     if (data.suspects.length > 0) {
