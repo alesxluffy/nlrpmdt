@@ -15,20 +15,37 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const body = await req.json()
-    const message = body.content || body.message || ''
+    // Some callers (or platform health checks) may hit this endpoint without a JSON body.
+    // Be tolerant: accept JSON when present, otherwise treat raw text as the message.
+    const rawBody = await req.text()
+    if (!rawBody) {
+      console.log('Webhook called with empty body', { method: req.method })
+      return new Response(
+        JSON.stringify({ error: 'Missing request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    let body: any = null
+    try {
+      body = JSON.parse(rawBody)
+    } catch {
+      body = { content: rawBody }
+    }
+
+    const message = body?.content || body?.message || rawBody
 
     console.log('Received webhook message:', message)
 
     // Parse format: (license:xxxxx) went on-duty. (Rank) or (license:xxxxx) went off-duty. (Rank)
-    const licenseMatch = message.match(/\(license:([a-f0-9]+)\)/)
+    const licenseMatch = message.match(/\(license:([^\)]+)\)/)
     const statusMatch = message.match(/went (on-duty|off-duty)/)
     const rankMatch = message.match(/\. \(([^)]+)\)$/)
 
     if (!licenseMatch || !statusMatch) {
       console.log('Could not parse message format')
       return new Response(
-        JSON.stringify({ error: 'Invalid message format' }),
+        JSON.stringify({ error: 'Invalid message format', received: message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -45,7 +62,7 @@ Deno.serve(async (req) => {
         license_id: licenseId,
         status,
         rank_at_time: rankAtTime,
-        raw_message: message
+        raw_message: message,
       })
       .select()
       .single()
@@ -72,3 +89,4 @@ Deno.serve(async (req) => {
     )
   }
 })
+
