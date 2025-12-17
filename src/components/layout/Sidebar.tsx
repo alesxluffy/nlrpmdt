@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ const navItems = [
   { path: '/roster', icon: Users, label: 'Roster' },
   { path: '/incidents/new', icon: AlertTriangle, label: 'New Incident' },
   { path: '/incidents', icon: History, label: 'Incident History' },
+  { path: '/duty-hours', icon: Clock, label: 'Duty Hours' },
   { path: '/roles', icon: Shield, label: 'Role Management', requiresHighCommand: true },
   { path: '/management', icon: Settings, label: 'Management', requiresHighCommand: true },
 ];

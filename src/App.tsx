@@ -14,6 +14,7 @@ import NewIncident from "./pages/NewIncident";
 import IncidentHistory from "./pages/IncidentHistory";
 import RoleManagement from "./pages/RoleManagement";
 import Management from "./pages/Management";
+import DutyHours from "./pages/DutyHours";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./components/layout/MainLayout";
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/incidents" element={<MainLayout><IncidentHistory /></MainLayout>} />
             <Route path="/roles" element={<MainLayout><RoleManagement /></MainLayout>} />
             <Route path="/management" element={<MainLayout><Management /></MainLayout>} />
+            <Route path="/duty-hours" element={<MainLayout><DutyHours /></MainLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
