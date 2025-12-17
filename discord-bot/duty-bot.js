@@ -15,9 +15,9 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 
 // Configuration - Replace these with your values
-const BOT_TOKEN = 'MTQ1MDgxNzU3MzQ1NjE4MzQ3Mg.GCk5Xm.rEC8E9OzCDfZCEuBwnsXDRx7UrvI_9_Tnvxnhg';
-const DUTY_CHANNEL_ID = '1442201608048873493';
-const WEBHOOK_URL = 'https://dvaudymlldvgjsltduus.supabase.co/functions/v1/duty-webhook';
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const DUTY_CHANNEL_ID = process.env.DUTY_CHANNEL_ID;
+const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
 const client = new Client({
   intents: [
