@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Accordion,
   AccordionContent,
@@ -20,8 +21,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Search, FileText, Book, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Search, FileText, Book, AlertCircle, Plus, Pencil, Trash2, Scale } from 'lucide-react';
 import { toast } from 'sonner';
+import DOJPanelCodes from '@/components/sop/DOJPanelCodes';
 
 export default function SOP() {
   const { canEditSOP } = useAuth();
@@ -31,6 +33,7 @@ export default function SOP() {
   const [editArticle, setEditArticle] = useState<any>(null);
   const [newCategory, setNewCategory] = useState(false);
   const [newArticle, setNewArticle] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('sop');
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ['sop-categories'],
@@ -112,138 +115,157 @@ export default function SOP() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <Book className="w-8 h-8 text-primary" />
-            Standard Operating Procedures
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Department policies, procedures, and guidelines
-          </p>
-        </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="sop" className="gap-2">
+            <Book className="w-4 h-4" />
+            SOP
+          </TabsTrigger>
+          <TabsTrigger value="doj" className="gap-2">
+            <Scale className="w-4 h-4" />
+            DOJ Panel Codes
+          </TabsTrigger>
+        </TabsList>
 
-        <div className="flex gap-2">
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search SOPs..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        <TabsContent value="sop" className="mt-6">
+          {/* SOP Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                <Book className="w-8 h-8 text-primary" />
+                Standard Operating Procedures
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Department policies, procedures, and guidelines
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search SOPs..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              {canEditSOP && (
+                <Button onClick={() => setNewCategory(true)} className="gap-2">
+                  <Plus className="w-4 h-4" /> Add Category
+                </Button>
+              )}
+            </div>
           </div>
-          {canEditSOP && (
-            <Button onClick={() => setNewCategory(true)} className="gap-2">
-              <Plus className="w-4 h-4" /> Add Category
-            </Button>
-          )}
-        </div>
-      </div>
 
-      {/* Content */}
-      {isLoading ? (
-        <div className="grid gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse bg-card">
-              <CardHeader>
-                <div className="h-6 bg-secondary rounded w-1/3" />
-              </CardHeader>
-              <CardContent>
-                <div className="h-4 bg-secondary rounded w-2/3" />
+          {/* SOP Content */}
+          {isLoading ? (
+            <div className="grid gap-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse bg-card">
+                  <CardHeader>
+                    <div className="h-6 bg-secondary rounded w-1/3" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-4 bg-secondary rounded w-2/3" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : filteredCategories && filteredCategories.length > 0 ? (
+            <Accordion type="multiple" className="space-y-4">
+              {filteredCategories.map((category) => (
+                <AccordionItem
+                  key={category.id}
+                  value={category.id}
+                  className="border border-border rounded-lg bg-card overflow-hidden"
+                >
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/50">
+                    <div className="flex items-center gap-3 flex-1">
+                      <FileText className="w-5 h-5 text-primary" />
+                      <div className="text-left flex-1">
+                        <h3 className="font-semibold text-foreground">{category.name}</h3>
+                        {category.description && (
+                          <p className="text-sm text-muted-foreground">{category.description}</p>
+                        )}
+                      </div>
+                      {canEditSOP && (
+                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" onClick={() => setEditCategory(category)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => setNewArticle(category.id)}>
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-4">
+                    {category.sop_articles && category.sop_articles.length > 0 ? (
+                      <div className="space-y-4 pt-2">
+                        {category.sop_articles
+                          .sort((a: any, b: any) => a.sort_order - b.sort_order)
+                          .map((article: any) => (
+                            <div
+                              key={article.id}
+                              className="p-4 rounded-lg bg-secondary/30 border border-border/50"
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-medium text-foreground">
+                                  {article.title}
+                                </h4>
+                                {canEditSOP && (
+                                  <div className="flex gap-1">
+                                    <Button variant="ghost" size="icon" onClick={() => setEditArticle(article)}>
+                                      <Pencil className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive"
+                                      onClick={() => deleteMutation.mutate({ type: 'article', id: article.id })}
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                {article.content}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p>No articles in this category yet</p>
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          ) : (
+            <Card className="bg-card">
+              <CardContent className="py-12 text-center">
+                <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  {searchQuery ? 'No results found' : 'No SOPs available'}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery ? 'Try adjusting your search terms' : 'SOP content will be added by High Command'}
+                </p>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      ) : filteredCategories && filteredCategories.length > 0 ? (
-        <Accordion type="multiple" className="space-y-4">
-          {filteredCategories.map((category) => (
-            <AccordionItem
-              key={category.id}
-              value={category.id}
-              className="border border-border rounded-lg bg-card overflow-hidden"
-            >
-              <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/50">
-                <div className="flex items-center gap-3 flex-1">
-                  <FileText className="w-5 h-5 text-primary" />
-                  <div className="text-left flex-1">
-                    <h3 className="font-semibold text-foreground">{category.name}</h3>
-                    {category.description && (
-                      <p className="text-sm text-muted-foreground">{category.description}</p>
-                    )}
-                  </div>
-                  {canEditSOP && (
-                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" onClick={() => setEditCategory(category)}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setNewArticle(category.id)}>
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-6 pb-4">
-                {category.sop_articles && category.sop_articles.length > 0 ? (
-                  <div className="space-y-4 pt-2">
-                    {category.sop_articles
-                      .sort((a: any, b: any) => a.sort_order - b.sort_order)
-                      .map((article: any) => (
-                        <div
-                          key={article.id}
-                          className="p-4 rounded-lg bg-secondary/30 border border-border/50"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-medium text-foreground">
-                              {article.title}
-                            </h4>
-                            {canEditSOP && (
-                              <div className="flex gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => setEditArticle(article)}>
-                                  <Pencil className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive"
-                                  onClick={() => deleteMutation.mutate({ type: 'article', id: article.id })}
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-                            {article.content}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p>No articles in this category yet</p>
-                  </div>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      ) : (
-        <Card className="bg-card">
-          <CardContent className="py-12 text-center">
-            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              {searchQuery ? 'No results found' : 'No SOPs available'}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {searchQuery ? 'Try adjusting your search terms' : 'SOP content will be added by High Command'}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </TabsContent>
+
+        <TabsContent value="doj" className="mt-6">
+          <DOJPanelCodes />
+        </TabsContent>
+      </Tabs>
 
       {/* Category Dialog */}
       <Dialog open={!!editCategory || newCategory} onOpenChange={() => { setEditCategory(null); setNewCategory(false); }}>
