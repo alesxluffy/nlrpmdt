@@ -1,0 +1,12 @@
+{
+  "name": "mdt-duty-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for tracking officer duty hours",
+  "main": "duty-bot.js",
+  "scripts": {
+    "start": "node duty-bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1"
+  }
+}
