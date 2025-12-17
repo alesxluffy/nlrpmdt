@@ -5,7 +5,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, Calendar, Copy, Check } from "lucide-react";
+import { Search, Clock, Calendar, Copy, Check, RefreshCw } from "lucide-react";
 import { format, differenceInMinutes, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -38,7 +38,7 @@ const DutyHours = () => {
   const webhookUrl = `https://dvaudymlldvgjsltduus.supabase.co/functions/v1/duty-webhook`;
 
   // Fetch profiles with license_id - refresh every 10 seconds
-  const { data: profiles } = useQuery({
+  const { data: profiles, refetch: refetchProfiles } = useQuery({
     queryKey: ["profiles-with-license"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -55,7 +55,7 @@ const DutyHours = () => {
   });
 
   // Fetch duty logs - refresh every 10 seconds
-  const { data: dutyLogs, dataUpdatedAt } = useQuery({
+  const { data: dutyLogs, dataUpdatedAt, refetch: refetchLogs, isFetching } = useQuery({
     queryKey: ["duty-logs"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -70,6 +70,11 @@ const DutyHours = () => {
     refetchInterval: 10_000,
     refetchOnWindowFocus: true,
   });
+
+  const handleManualRefresh = async () => {
+    await Promise.all([refetchProfiles(), refetchLogs()]);
+    toast.success("Duty hours refreshed");
+  };
 
   // Calculate duty hours for each officer
   const officerStats = useMemo(() => {
@@ -224,6 +229,15 @@ const DutyHours = () => {
               )}
             </p>
           </div>
+          <Button 
+            variant="outline" 
+            onClick={handleManualRefresh}
+            disabled={isFetching}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         {/* Webhook URL Card */}
