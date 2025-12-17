@@ -7,8 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -21,7 +19,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -35,8 +32,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Search, History, Filter, Eye, Copy, Check, Plus, Trash2, Lock, UserPlus, Edit } from 'lucide-react';
 import { toast } from 'sonner';
-import { INCIDENT_TYPES, SUSPECT_STATUSES } from '@/data/incidentData';
+import { INCIDENT_TYPES } from '@/data/incidentData';
 import { ImagePreviewModal } from '@/components/ui/image-preview-modal';
+import { AddSuspectDialog } from '@/components/incident/AddSuspectDialog';
+import { EditIncidentDialog } from '@/components/incident/EditIncidentDialog';
 
 export default function IncidentHistory() {
   const { canDeleteIncident } = useAuth();
@@ -49,22 +48,8 @@ export default function IncidentHistory() {
   const [closeConfirm, setCloseConfirm] = useState<any>(null);
   const [copied, setCopied] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [addSuspectDialogOpen, setAddSuspectDialogOpen] = useState(false);
-  const [editingIncidentId, setEditingIncidentId] = useState<string | null>(null);
-  const [newSuspect, setNewSuspect] = useState({
-    name: '',
-    cid: '',
-    mugshot: '',
-    charges: '',
-    status: 'In Custody',
-    plead: 'Not Guilty',
-    confiscated_items: '',
-    evidences: '',
-    fine: 0,
-    jail: 0,
-    tag: '',
-    is_hut: false,
-  });
+  const [addSuspectIncidentId, setAddSuspectIncidentId] = useState<string | null>(null);
+  const [editIncident, setEditIncident] = useState<any>(null);
 
   const { data: incidents, isLoading } = useQuery({
     queryKey: ['incidents-history'],
@@ -118,50 +103,6 @@ export default function IncidentHistory() {
     },
   });
 
-  const addSuspectMutation = useMutation({
-    mutationFn: async ({ incidentId, suspect }: { incidentId: string; suspect: typeof newSuspect }) => {
-      const { error } = await supabase.from('incident_suspects').insert({
-        incident_id: incidentId,
-        name: suspect.name,
-        cid: suspect.cid || null,
-        mugshot: suspect.mugshot || null,
-        charges: suspect.charges || null,
-        status: suspect.status,
-        plead: suspect.plead,
-        confiscated_items: suspect.confiscated_items || null,
-        evidences: suspect.evidences || null,
-        fine: suspect.fine,
-        jail: suspect.jail,
-        tag: suspect.tag || null,
-        is_hut: suspect.is_hut,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['incidents-history'] });
-      toast.success('Suspect added');
-      setAddSuspectDialogOpen(false);
-      setEditingIncidentId(null);
-      setNewSuspect({
-        name: '',
-        cid: '',
-        mugshot: '',
-        charges: '',
-        status: 'In Custody',
-        plead: 'Not Guilty',
-        confiscated_items: '',
-        evidences: '',
-        fine: 0,
-        jail: 0,
-        tag: '',
-        is_hut: false,
-      });
-    },
-    onError: () => {
-      toast.error('Failed to add suspect');
-    },
-  });
-
   const filteredIncidents = incidents?.filter(incident => {
     const matchesSearch = 
       incident.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -189,25 +130,11 @@ export default function IncidentHistory() {
     }
   };
 
-  const handleAddSuspect = (incidentId: string) => {
-    setEditingIncidentId(incidentId);
-    setAddSuspectDialogOpen(true);
-  };
-
-  const submitNewSuspect = () => {
-    if (!editingIncidentId || !newSuspect.name.trim()) {
-      toast.error('Suspect name is required');
-      return;
-    }
-    addSuspectMutation.mutate({ incidentId: editingIncidentId, suspect: newSuspect });
-  };
-
   // Collect all evidence URLs from an incident
   const collectEvidenceUrls = (incident: any): { url: string; label: string }[] => {
     const evidences: { url: string; label: string }[] = [];
     
-    // From suspects
-    incident.incident_suspects?.forEach((s: any, idx: number) => {
+    incident.incident_suspects?.forEach((s: any) => {
       if (s.mugshot) {
         evidences.push({ url: s.mugshot, label: `Mugshot - ${s.name}` });
       }
@@ -218,7 +145,6 @@ export default function IncidentHistory() {
       }
     });
     
-    // From vehicles
     incident.incident_vehicles?.forEach((v: any) => {
       if (v.front_image) evidences.push({ url: v.front_image, label: `Front - ${v.vehicle_name}` });
       if (v.back_image) evidences.push({ url: v.back_image, label: `Back - ${v.vehicle_name}` });
@@ -348,18 +274,31 @@ export default function IncidentHistory() {
                         <Eye className="w-4 h-4" />
                       </Button>
                       {isOpen && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-primary hover:text-primary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddSuspect(incident.id);
-                          }}
-                          title="Add Suspect"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditIncident(incident);
+                            }}
+                            title="Edit Incident"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-primary hover:text-primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAddSuspectIncidentId(incident.id);
+                            }}
+                            title="Add Suspect"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                          </Button>
+                        </>
                       )}
                       {canDeleteIncident && (
                         <Button
@@ -525,9 +464,15 @@ export default function IncidentHistory() {
                     <Button
                       variant="outline"
                       className="gap-2"
-                      onClick={() => {
-                        handleAddSuspect(selectedIncident.id);
-                      }}
+                      onClick={() => setEditIncident(selectedIncident)}
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => setAddSuspectIncidentId(selectedIncident.id)}
                     >
                       <UserPlus className="w-4 h-4" />
                       Add Suspect
@@ -538,7 +483,7 @@ export default function IncidentHistory() {
                       onClick={() => setCloseConfirm(selectedIncident)}
                     >
                       <Lock className="w-4 h-4" />
-                      Close Incident
+                      Close
                     </Button>
                   </>
                 )}
@@ -549,168 +494,18 @@ export default function IncidentHistory() {
       </Dialog>
 
       {/* Add Suspect Dialog */}
-      <Dialog open={addSuspectDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          setAddSuspectDialogOpen(false);
-          setEditingIncidentId(null);
-        }
-      }}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5" />
-              Add Suspect
-            </DialogTitle>
-          </DialogHeader>
+      <AddSuspectDialog
+        open={!!addSuspectIncidentId}
+        onOpenChange={(open) => !open && setAddSuspectIncidentId(null)}
+        incidentId={addSuspectIncidentId || ''}
+      />
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Name *</Label>
-                <Input
-                  placeholder="Suspect name"
-                  value={newSuspect.name}
-                  onChange={(e) => setNewSuspect({ ...newSuspect, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">CID</Label>
-                <Input
-                  placeholder="Criminal ID"
-                  value={newSuspect.cid}
-                  onChange={(e) => setNewSuspect({ ...newSuspect, cid: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs">Mugshot URL</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Image URL"
-                  value={newSuspect.mugshot}
-                  onChange={(e) => setNewSuspect({ ...newSuspect, mugshot: e.target.value })}
-                />
-                {newSuspect.mugshot && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setPreviewImage(newSuspect.mugshot)}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Status</Label>
-                <Select value={newSuspect.status} onValueChange={(v) => setNewSuspect({ ...newSuspect, status: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUSPECT_STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Plead</Label>
-                <Select value={newSuspect.plead} onValueChange={(v) => setNewSuspect({ ...newSuspect, plead: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Guilty">Guilty</SelectItem>
-                    <SelectItem value="Not Guilty">Not Guilty</SelectItem>
-                    <SelectItem value="No Contest">No Contest</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs">Charges</Label>
-              <Textarea
-                placeholder="Enter charges (e.g., P.C. 201 Criminal Threat, P.C. 202 Assault)"
-                value={newSuspect.charges}
-                onChange={(e) => setNewSuspect({ ...newSuspect, charges: e.target.value })}
-                rows={2}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Jail (months)</Label>
-                <Input
-                  type="number"
-                  value={newSuspect.jail}
-                  onChange={(e) => setNewSuspect({ ...newSuspect, jail: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Fine ($)</Label>
-                <Input
-                  type="number"
-                  value={newSuspect.fine}
-                  onChange={(e) => setNewSuspect({ ...newSuspect, fine: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs">Confiscated Items</Label>
-              <Textarea
-                placeholder="Items confiscated"
-                value={newSuspect.confiscated_items}
-                onChange={(e) => setNewSuspect({ ...newSuspect, confiscated_items: e.target.value })}
-                rows={2}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs">Evidence URLs (one per line)</Label>
-              <Textarea
-                placeholder="Evidence image URLs"
-                value={newSuspect.evidences}
-                onChange={(e) => setNewSuspect({ ...newSuspect, evidences: e.target.value })}
-                rows={2}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs">Tag</Label>
-              <Input
-                placeholder="Optional tag"
-                value={newSuspect.tag}
-                onChange={(e) => setNewSuspect({ ...newSuspect, tag: e.target.value })}
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="is_hut"
-                checked={newSuspect.is_hut}
-                onChange={(e) => setNewSuspect({ ...newSuspect, is_hut: e.target.checked })}
-                className="rounded border-border"
-              />
-              <Label htmlFor="is_hut" className="text-xs cursor-pointer">Hold Until Trial (HUT)</Label>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddSuspectDialogOpen(false)}>Cancel</Button>
-            <Button onClick={submitNewSuspect} disabled={addSuspectMutation.isPending}>
-              {addSuspectMutation.isPending ? 'Adding...' : 'Add Suspect'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Incident Dialog */}
+      <EditIncidentDialog
+        open={!!editIncident}
+        onOpenChange={(open) => !open && setEditIncident(null)}
+        incident={editIncident}
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
