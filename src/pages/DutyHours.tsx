@@ -20,6 +20,7 @@ interface DutyLog {
 }
 
 interface OfficerDutyStats {
+  id: string;
   name: string;
   rank: string;
   division: string;
@@ -44,7 +45,8 @@ const DutyHours = () => {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, first_name, last_name, rank, division, license_id")
-        .not("license_id", "is", null);
+        .not("license_id", "is", null)
+        .neq("license_id", "");
 
       if (error) throw error;
       return data;
@@ -84,7 +86,7 @@ const DutyHours = () => {
       (value ?? "")
         .trim()
         .toLowerCase()
-        .replace(/^license:/, "");
+        .replace(/^(license:)+/, "");
 
     const normalizeStatus = (value: string | null | undefined) => {
       const v = (value ?? "").toLowerCase().replace(/-/g, "_");
@@ -181,6 +183,7 @@ const DutyHours = () => {
       const lastLog = officerLogs[officerLogs.length - 1];
 
       return {
+        id: profile.id,
         name: `${profile.first_name} ${profile.last_name}`,
         rank: profile.rank || "Unknown",
         division: profile.division || "Unknown",
@@ -274,7 +277,7 @@ const DutyHours = () => {
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredStats.map((officer) => (
-            <Card key={officer.license_id} className="border-border/50 bg-card/80">
+            <Card key={officer.id} className="border-border/50 bg-card/80">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div>

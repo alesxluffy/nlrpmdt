@@ -37,24 +37,42 @@ Deno.serve(async (req) => {
 
     console.log('Received webhook message:', message)
 
-    // Parse format (variants accepted):
+    // Parse status/license from a few common variants (be liberal in what we accept)
+    // Examples:
     // (license:xxxxx) went on-duty/off-duty. (Rank)
     // (license:xxxxx) went on duty/off duty. (Rank)
-    const licenseMatch = message.match(/\(license:([^\)]+)\)/i)
-    const statusMatch = message.match(/went\s+(on[- ]duty|off[- ]duty)/i)
-    const rankMatch = message.match(/\. \(([^)]+)\)$/)
+    // 10-41 / 10-42 messages that still include the license id
 
-    if (!licenseMatch || !statusMatch) {
-      console.log('Could not parse message format')
+    const extractLicenseId = (msg: string): string | null => {
+      const fromParen = msg.match(/\(license:([^\)]+)\)/i)?.[1];
+      const fromInline = msg.match(/\blicense:([a-f0-9]{8,})\b/i)?.[1];
+      const raw = String(fromParen ?? fromInline ?? '').trim();
+      if (!raw) return null;
+
+      // Normalize: remove any repeated leading "license:" tokens then rebuild as "license:<hash>"
+      const cleaned = raw.replace(/^(license:)+/i, '').trim();
+      return cleaned ? `license:${cleaned}` : null;
+    };
+
+    const extractStatus = (msg: string): 'on_duty' | 'off_duty' | null => {
+      const m = msg.toLowerCase();
+      if (/\b10[- ]?41\b/.test(m) || /\bon[- ]?duty\b/.test(m)) return 'on_duty';
+      if (/\b10[- ]?42\b/.test(m) || /\boff[- ]?duty\b/.test(m)) return 'off_duty';
+      return null;
+    };
+
+    const licenseId = extractLicenseId(message);
+    const status = extractStatus(message);
+    const rankMatch = message.match(/\(([^()]+)\)\s*$/);
+
+    if (!licenseId || !status) {
+      console.log('Could not parse message format');
       return new Response(
         JSON.stringify({ error: 'Invalid message format', received: message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      );
     }
 
-    const licenseId = String(licenseMatch[1]).trim()
-    const statusToken = String(statusMatch[1]).toLowerCase().replace(/\s+/g, '-')
-    const status = statusToken === 'on-duty' ? 'on_duty' : 'off_duty'
     const rankAtTime = rankMatch ? rankMatch[1] : null
 
     console.log('Parsed:', { licenseId, status, rankAtTime })
