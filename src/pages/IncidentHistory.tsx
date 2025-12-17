@@ -281,6 +281,66 @@ export default function IncidentHistory() {
                 {selectedIncident.report_content || 'No report content available'}
               </div>
 
+              {/* Evidence from Suspects */}
+              {selectedIncident.incident_suspects?.some((s: any) => s.evidences) && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-foreground">Suspect Evidence</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedIncident.incident_suspects
+                      .filter((s: any) => s.evidences)
+                      .flatMap((s: any) => 
+                        s.evidences.split('\n').filter((url: string) => url.trim()).map((url: string, idx: number) => (
+                          <a
+                            key={`${s.id}-${idx}`}
+                            href={url.trim()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="relative w-16 h-16 rounded-lg overflow-hidden border border-border bg-background block"
+                          >
+                            <img src={url.trim()} alt="Evidence" className="w-full h-full object-cover" />
+                          </a>
+                        ))
+                      )}
+                  </div>
+                </div>
+              )}
+
+              {/* Vehicle Evidence */}
+              {selectedIncident.incident_vehicles?.some((v: any) => v.front_image || v.back_image || v.plate_image) && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-foreground">Vehicle Evidence</h4>
+                  <div className="space-y-2">
+                    {selectedIncident.incident_vehicles
+                      .filter((v: any) => v.front_image || v.back_image || v.plate_image)
+                      .map((v: any) => (
+                        <div key={v.id} className="p-2 rounded bg-secondary/30 border border-border">
+                          <p className="text-xs text-muted-foreground mb-2">{v.vehicle_name}</p>
+                          <div className="flex gap-2">
+                            {v.front_image && (
+                              <a href={v.front_image} target="_blank" rel="noopener noreferrer" className="relative w-16 h-16 rounded-lg overflow-hidden border border-border bg-background block">
+                                <img src={v.front_image} alt="Front" className="w-full h-full object-cover" />
+                                <span className="absolute bottom-0 left-0 right-0 bg-background/80 text-[10px] text-center">Front</span>
+                              </a>
+                            )}
+                            {v.back_image && (
+                              <a href={v.back_image} target="_blank" rel="noopener noreferrer" className="relative w-16 h-16 rounded-lg overflow-hidden border border-border bg-background block">
+                                <img src={v.back_image} alt="Back" className="w-full h-full object-cover" />
+                                <span className="absolute bottom-0 left-0 right-0 bg-background/80 text-[10px] text-center">Back</span>
+                              </a>
+                            )}
+                            {v.plate_image && (
+                              <a href={v.plate_image} target="_blank" rel="noopener noreferrer" className="relative w-16 h-16 rounded-lg overflow-hidden border border-border bg-background block">
+                                <img src={v.plate_image} alt="Plate" className="w-full h-full object-cover" />
+                                <span className="absolute bottom-0 left-0 right-0 bg-background/80 text-[10px] text-center">Plate</span>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               <Button
                 onClick={() => copyReport(selectedIncident.report_content || '')}
                 className="w-full gap-2"

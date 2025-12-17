@@ -70,7 +70,7 @@ const emptySuspect: SuspectData = {
 
 export default function IncidentSuspectsStep({ formData, updateFormData }: IncidentSuspectsStepProps) {
   const [newSuspect, setNewSuspect] = useState<SuspectData>({ ...emptySuspect });
-  const [newVehicle, setNewVehicle] = useState({ vehicle: '', plate: '', color: '', registeredTo: '' });
+  const [newVehicle, setNewVehicle] = useState({ vehicle: '', plate: '', color: '', registeredTo: '', frontImage: '', backImage: '', plateImage: '' });
   const [chargeSearchOpen, setChargeSearchOpen] = useState(false);
   const [chargeSearch, setChargeSearch] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -185,7 +185,7 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
   const addVehicle = () => {
     if (newVehicle.vehicle) {
       updateFormData({ vehicles: [...formData.vehicles, newVehicle] });
-      setNewVehicle({ vehicle: '', plate: '', color: '', registeredTo: '' });
+      setNewVehicle({ vehicle: '', plate: '', color: '', registeredTo: '', frontImage: '', backImage: '', plateImage: '' });
     }
   };
 
@@ -612,15 +612,52 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
             {formData.vehicles.map((vehicle, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border"
+                className="flex items-start justify-between p-3 rounded-lg bg-secondary/30 border border-border"
               >
-                <div>
+                <div className="space-y-2">
                   <p className="font-medium text-foreground">{vehicle.vehicle}</p>
                   <p className="text-sm text-muted-foreground">
                     {vehicle.color && `${vehicle.color} • `}
                     {vehicle.plate || 'No plate'}
                     {vehicle.registeredTo && ` • Registered to: ${vehicle.registeredTo}`}
                   </p>
+                  {(vehicle.frontImage || vehicle.backImage || vehicle.plateImage) && (
+                    <div className="flex gap-2 mt-2">
+                      {vehicle.frontImage && (
+                        <div 
+                          className="relative w-12 h-12 rounded-lg overflow-hidden border border-border bg-background cursor-pointer group"
+                          onClick={() => setPreviewImage(vehicle.frontImage)}
+                        >
+                          <img src={vehicle.frontImage} alt="Front" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Eye className="w-3 h-3 text-foreground" />
+                          </div>
+                        </div>
+                      )}
+                      {vehicle.backImage && (
+                        <div 
+                          className="relative w-12 h-12 rounded-lg overflow-hidden border border-border bg-background cursor-pointer group"
+                          onClick={() => setPreviewImage(vehicle.backImage)}
+                        >
+                          <img src={vehicle.backImage} alt="Back" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Eye className="w-3 h-3 text-foreground" />
+                          </div>
+                        </div>
+                      )}
+                      {vehicle.plateImage && (
+                        <div 
+                          className="relative w-12 h-12 rounded-lg overflow-hidden border border-border bg-background cursor-pointer group"
+                          onClick={() => setPreviewImage(vehicle.plateImage)}
+                        >
+                          <img src={vehicle.plateImage} alt="Plate" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Eye className="w-3 h-3 text-foreground" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <Button
                   type="button"
@@ -637,58 +674,109 @@ export default function IncidentSuspectsStep({ formData, updateFormData }: Incid
         )}
 
         {/* Add new vehicle */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 p-4 rounded-lg bg-secondary/20 border border-border/50">
-          <div className="space-y-1">
-            <Label className="text-xs">Vehicle</Label>
-            <Select
-              value={newVehicle.vehicle}
-              onValueChange={(value) => setNewVehicle({ ...newVehicle, vehicle: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select vehicle" />
-              </SelectTrigger>
-              <SelectContent>
-                {VEHICLES.map((v) => (
-                  <SelectItem key={v} value={v}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="p-4 rounded-lg bg-secondary/20 border border-border/50 space-y-4">
+          <p className="text-sm font-medium text-foreground">Add New Vehicle</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Vehicle</Label>
+              <Select
+                value={newVehicle.vehicle}
+                onValueChange={(value) => setNewVehicle({ ...newVehicle, vehicle: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select vehicle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {VEHICLES.map((v) => (
+                    <SelectItem key={v} value={v}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Color</Label>
+              <Input
+                placeholder="Color"
+                value={newVehicle.color}
+                onChange={(e) => setNewVehicle({ ...newVehicle, color: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Plate</Label>
+              <Input
+                placeholder="Plate"
+                value={newVehicle.plate}
+                onChange={(e) => setNewVehicle({ ...newVehicle, plate: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Registered To</Label>
+              <Input
+                placeholder="Owner name"
+                value={newVehicle.registeredTo}
+                onChange={(e) => setNewVehicle({ ...newVehicle, registeredTo: e.target.value })}
+              />
+            </div>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Color</Label>
-            <Input
-              placeholder="Color"
-              value={newVehicle.color}
-              onChange={(e) => setNewVehicle({ ...newVehicle, color: e.target.value })}
-            />
+          
+          {/* Vehicle Evidence Images */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Front Image URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Vehicle front image URL"
+                  value={newVehicle.frontImage}
+                  onChange={(e) => setNewVehicle({ ...newVehicle, frontImage: e.target.value })}
+                />
+                {newVehicle.frontImage && (
+                  <Button type="button" variant="outline" size="icon" onClick={() => setPreviewImage(newVehicle.frontImage)}>
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Back Image URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Vehicle back image URL"
+                  value={newVehicle.backImage}
+                  onChange={(e) => setNewVehicle({ ...newVehicle, backImage: e.target.value })}
+                />
+                {newVehicle.backImage && (
+                  <Button type="button" variant="outline" size="icon" onClick={() => setPreviewImage(newVehicle.backImage)}>
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Plate Image URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Number plate image URL"
+                  value={newVehicle.plateImage}
+                  onChange={(e) => setNewVehicle({ ...newVehicle, plateImage: e.target.value })}
+                />
+                {newVehicle.plateImage && (
+                  <Button type="button" variant="outline" size="icon" onClick={() => setPreviewImage(newVehicle.plateImage)}>
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Plate</Label>
-            <Input
-              placeholder="Plate"
-              value={newVehicle.plate}
-              onChange={(e) => setNewVehicle({ ...newVehicle, plate: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Registered To</Label>
-            <Input
-              placeholder="Owner name"
-              value={newVehicle.registeredTo}
-              onChange={(e) => setNewVehicle({ ...newVehicle, registeredTo: e.target.value })}
-            />
-          </div>
-          <div className="flex items-end">
-            <Button
-              type="button"
-              onClick={addVehicle}
-              disabled={!newVehicle.vehicle}
-              className="w-full gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add
-            </Button>
-          </div>
+          
+          <Button
+            type="button"
+            onClick={addVehicle}
+            disabled={!newVehicle.vehicle}
+            className="w-full gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Vehicle
+          </Button>
         </div>
       </div>
 
