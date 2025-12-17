@@ -15,9 +15,9 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const https = require('https');
 
-const BOT_TOKEN = MTQ1MDgxNzU3MzQ1NjE4MzQ3Mg.GV5sXg.bM96lYmlPAw6GK-PQKRYiueMoHEaPXAIwyY4m8;
-const DUTY_CHANNEL_ID = 1442201608048873493;
-const WEBHOOK_URL = https://dvaudymlldvgjsltduus.supabase.co/functions/v1/duty-webhook;
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const DUTY_CHANNEL_ID = process.env.DUTY_CHANNEL_ID;
+const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
 if (!BOT_TOKEN || !DUTY_CHANNEL_ID || !WEBHOOK_URL) {
   console.error('❌ Missing required environment variables.');
