@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -79,41 +79,60 @@ export interface IncidentFormData {
 
 const STEPS = ['Type', 'Details', 'Suspects & Vehicles', 'Review'];
 
+const STORAGE_KEY = 'incident-form-draft';
+
+const getInitialFormData = (): IncidentFormData => ({
+  incidentType: '',
+  location: '',
+  customLocation: '',
+  description: '',
+  officers: [],
+  citizensInvolved: [],
+  incidentEvidences: [],
+  pursuitOccurred: false,
+  pursuitInitiator: '',
+  pursuitReason: '',
+  pursuitType: '',
+  pursuitTermination: '',
+  suspects: [],
+  vehicles: [],
+  notes: '',
+  reportingOfficer: '',
+  sceneCommand: '',
+  negotiator: '',
+  hostageOfficer: '',
+  pursuitPrimary: '',
+  pursuitSecondary: '',
+  pursuitTertiary: '',
+  pursuitParallel: '',
+  robbersInvolved: 0,
+  robbersApprehended: 0,
+  hostagesCount: 0,
+  demands: '',
+  chaseNarrative: '',
+});
+
 export default function NewIncident() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<IncidentFormData>({
-    incidentType: '',
-    location: '',
-    customLocation: '',
-    description: '',
-    officers: [],
-    citizensInvolved: [],
-    incidentEvidences: [],
-    pursuitOccurred: false,
-    pursuitInitiator: '',
-    pursuitReason: '',
-    pursuitType: '',
-    pursuitTermination: '',
-    suspects: [],
-    vehicles: [],
-    notes: '',
-    // 10-90 specific fields
-    reportingOfficer: '',
-    sceneCommand: '',
-    negotiator: '',
-    hostageOfficer: '',
-    pursuitPrimary: '',
-    pursuitSecondary: '',
-    pursuitTertiary: '',
-    pursuitParallel: '',
-    robbersInvolved: 0,
-    robbersApprehended: 0,
-    hostagesCount: 0,
-    demands: '',
-    chaseNarrative: '',
+  const [formData, setFormData] = useState<IncidentFormData>(() => {
+    // Load from localStorage on initial render
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return getInitialFormData();
+      }
+    }
+    return getInitialFormData();
   });
+
+  // Save form data to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+  }, [formData]);
 
   const createIncidentMutation = useMutation({
     mutationFn: async (data: IncidentFormData) => {
@@ -195,6 +214,8 @@ export default function NewIncident() {
     },
     onSuccess: () => {
       toast.success('Incident report created successfully!');
+      // Clear saved draft after successful submission
+      localStorage.removeItem(STORAGE_KEY);
       navigate('/incidents');
     },
     onError: (error) => {

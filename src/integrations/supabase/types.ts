@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      approved_emails: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          email: string
+          id: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       incident_officers: {
         Row: {
           id: string
@@ -365,10 +392,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      use_approved_email: {
+        Args: { email_input: string; user_id_input: string }
+        Returns: boolean
+      }
       use_invitation_code: {
         Args: { code_input: string; user_id_input: string }
         Returns: boolean
       }
+      validate_email_access: { Args: { email_input: string }; Returns: boolean }
       validate_invitation_code: {
         Args: { code_input: string }
         Returns: boolean
