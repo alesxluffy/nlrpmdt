@@ -49,6 +49,9 @@ const DutyHours = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch duty logs
@@ -63,23 +66,58 @@ const DutyHours = () => {
       if (error) throw error;
       return data as DutyLog[];
     },
+    staleTime: 5_000,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 
   // Calculate duty hours for each officer
   const officerStats = useMemo(() => {
     if (!profiles || !dutyLogs) return [];
 
+    const normalizeLicense = (value: string | null | undefined) =>
+      (value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/^license:/, "");
+
+    const normalizeStatus = (value: string | null | undefined) => {
+      const v = (value ?? "").toLowerCase().replace(/-/g, "_");
+      if (v === "on_duty") return "on_duty";
+      if (v === "off_duty") return "off_duty";
+      return "unknown";
+    };
+
+    const addOverlapMinutes = (
+      start: Date,
+      end: Date,
+      windowStart: Date,
+      windowEnd: Date
+    ) => {
+      const overlapStart = start > windowStart ? start : windowStart;
+      const overlapEnd = end < windowEnd ? end : windowEnd;
+      return Math.max(0, differenceInMinutes(overlapEnd, overlapStart));
+    };
+
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+
     const weekStart = startOfWeek(now, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
 
     return profiles.map((profile) => {
+      const profileLicense = normalizeLicense(profile.license_id);
+
       const officerLogs = dutyLogs
-        .filter((log) => log.license_id === profile.license_id)
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        .filter((log) => normalizeLicense(log.license_id) === profileLicense)
+        .sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
 
       let totalMinutesToday = 0;
       let totalMinutesWeek = 0;
@@ -88,37 +126,51 @@ const DutyHours = () => {
 
       for (const log of officerLogs) {
         const logTime = new Date(log.created_at);
+        const status = normalizeStatus(log.status);
 
-        if (log.status === "on_duty") {
+        if (status === "on_duty") {
           lastOnDuty = logTime;
-        } else if (log.status === "off_duty" && lastOnDuty) {
-          const minutes = differenceInMinutes(logTime, lastOnDuty);
+          continue;
+        }
 
-          // Today
-          if (lastOnDuty >= todayStart) {
-            totalMinutesToday += minutes;
-          }
-
-          // This week
-          if (lastOnDuty >= weekStart && logTime <= weekEnd) {
-            totalMinutesWeek += minutes;
-          }
-
-          // This month
-          if (lastOnDuty >= monthStart && logTime <= monthEnd) {
-            totalMinutesMonth += minutes;
-          }
-
+        if (status === "off_duty" && lastOnDuty) {
+          totalMinutesToday += addOverlapMinutes(
+            lastOnDuty,
+            logTime,
+            todayStart,
+            tomorrowStart
+          );
+          totalMinutesWeek += addOverlapMinutes(
+            lastOnDuty,
+            logTime,
+            weekStart,
+            weekEnd
+          );
+          totalMinutesMonth += addOverlapMinutes(
+            lastOnDuty,
+            logTime,
+            monthStart,
+            monthEnd
+          );
           lastOnDuty = null;
         }
       }
 
       // If still on duty, count time until now
       if (lastOnDuty) {
-        const minutes = differenceInMinutes(now, lastOnDuty);
-        if (lastOnDuty >= todayStart) totalMinutesToday += minutes;
-        if (lastOnDuty >= weekStart) totalMinutesWeek += minutes;
-        if (lastOnDuty >= monthStart) totalMinutesMonth += minutes;
+        totalMinutesToday += addOverlapMinutes(
+          lastOnDuty,
+          now,
+          todayStart,
+          tomorrowStart
+        );
+        totalMinutesWeek += addOverlapMinutes(lastOnDuty, now, weekStart, weekEnd);
+        totalMinutesMonth += addOverlapMinutes(
+          lastOnDuty,
+          now,
+          monthStart,
+          monthEnd
+        );
       }
 
       const lastLog = officerLogs[officerLogs.length - 1];
@@ -131,7 +183,7 @@ const DutyHours = () => {
         totalMinutesToday,
         totalMinutesWeek,
         totalMinutesMonth,
-        lastStatus: lastLog?.status || "unknown",
+        lastStatus: lastLog ? normalizeStatus(lastLog.status) : "unknown",
         lastStatusTime: lastLog?.created_at || "",
       } as OfficerDutyStats;
     });

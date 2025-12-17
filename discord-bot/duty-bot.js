@@ -88,9 +88,14 @@ client.on('messageCreate', async (message) => {
   if (message.channel.id !== DUTY_CHANNEL_ID) return;
 
   const content = message.content;
+  const normalized = content.toLowerCase();
 
-  // Check if message matches duty format: (license:xxxxx) went on-duty/off-duty. (Rank)
-  if (content.includes('went on-duty') || content.includes('went off-duty')) {
+  // Check if message matches duty format variants:
+  // (license:xxxxx) went on-duty/off-duty. (Rank)
+  // (license:xxxxx) went on duty/off duty. (Rank)
+  const isDutyMessage = /went\s+(on[- ]duty|off[- ]duty)/i.test(normalized);
+
+  if (isDutyMessage) {
     console.log(`📨 Duty message detected: ${content}`);
 
     try {
