@@ -7,6 +7,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -19,6 +21,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -30,9 +33,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Search, History, Filter, Eye, Copy, Check, Plus, Trash2 } from 'lucide-react';
+import { Search, History, Filter, Eye, Copy, Check, Plus, Trash2, Lock, UserPlus, Edit } from 'lucide-react';
 import { toast } from 'sonner';
-import { INCIDENT_TYPES } from '@/data/incidentData';
+import { INCIDENT_TYPES, SUSPECT_STATUSES } from '@/data/incidentData';
+import { ImagePreviewModal } from '@/components/ui/image-preview-modal';
 
 export default function IncidentHistory() {
   const { canDeleteIncident } = useAuth();
@@ -42,7 +46,25 @@ export default function IncidentHistory() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedIncident, setSelectedIncident] = useState<any>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<any>(null);
+  const [closeConfirm, setCloseConfirm] = useState<any>(null);
   const [copied, setCopied] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [addSuspectDialogOpen, setAddSuspectDialogOpen] = useState(false);
+  const [editingIncidentId, setEditingIncidentId] = useState<string | null>(null);
+  const [newSuspect, setNewSuspect] = useState({
+    name: '',
+    cid: '',
+    mugshot: '',
+    charges: '',
+    status: 'In Custody',
+    plead: 'Not Guilty',
+    confiscated_items: '',
+    evidences: '',
+    fine: 0,
+    jail: 0,
+    tag: '',
+    is_hut: false,
+  });
 
   const { data: incidents, isLoading } = useQuery({
     queryKey: ['incidents-history'],
@@ -77,6 +99,69 @@ export default function IncidentHistory() {
     },
   });
 
+  const closeIncidentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('incidents')
+        .update({ status: 'Closed', updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incidents-history'] });
+      toast.success('Incident closed');
+      setCloseConfirm(null);
+      setSelectedIncident(null);
+    },
+    onError: () => {
+      toast.error('Failed to close incident');
+    },
+  });
+
+  const addSuspectMutation = useMutation({
+    mutationFn: async ({ incidentId, suspect }: { incidentId: string; suspect: typeof newSuspect }) => {
+      const { error } = await supabase.from('incident_suspects').insert({
+        incident_id: incidentId,
+        name: suspect.name,
+        cid: suspect.cid || null,
+        mugshot: suspect.mugshot || null,
+        charges: suspect.charges || null,
+        status: suspect.status,
+        plead: suspect.plead,
+        confiscated_items: suspect.confiscated_items || null,
+        evidences: suspect.evidences || null,
+        fine: suspect.fine,
+        jail: suspect.jail,
+        tag: suspect.tag || null,
+        is_hut: suspect.is_hut,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incidents-history'] });
+      toast.success('Suspect added');
+      setAddSuspectDialogOpen(false);
+      setEditingIncidentId(null);
+      setNewSuspect({
+        name: '',
+        cid: '',
+        mugshot: '',
+        charges: '',
+        status: 'In Custody',
+        plead: 'Not Guilty',
+        confiscated_items: '',
+        evidences: '',
+        fine: 0,
+        jail: 0,
+        tag: '',
+        is_hut: false,
+      });
+    },
+    onError: () => {
+      toast.error('Failed to add suspect');
+    },
+  });
+
   const filteredIncidents = incidents?.filter(incident => {
     const matchesSearch = 
       incident.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -102,6 +187,45 @@ export default function IncidentHistory() {
     } catch {
       toast.error('Failed to copy');
     }
+  };
+
+  const handleAddSuspect = (incidentId: string) => {
+    setEditingIncidentId(incidentId);
+    setAddSuspectDialogOpen(true);
+  };
+
+  const submitNewSuspect = () => {
+    if (!editingIncidentId || !newSuspect.name.trim()) {
+      toast.error('Suspect name is required');
+      return;
+    }
+    addSuspectMutation.mutate({ incidentId: editingIncidentId, suspect: newSuspect });
+  };
+
+  // Collect all evidence URLs from an incident
+  const collectEvidenceUrls = (incident: any): { url: string; label: string }[] => {
+    const evidences: { url: string; label: string }[] = [];
+    
+    // From suspects
+    incident.incident_suspects?.forEach((s: any, idx: number) => {
+      if (s.mugshot) {
+        evidences.push({ url: s.mugshot, label: `Mugshot - ${s.name}` });
+      }
+      if (s.evidences) {
+        s.evidences.split('\n').filter((url: string) => url.trim()).forEach((url: string, eIdx: number) => {
+          evidences.push({ url: url.trim(), label: `Evidence ${eIdx + 1} - ${s.name}` });
+        });
+      }
+    });
+    
+    // From vehicles
+    incident.incident_vehicles?.forEach((v: any) => {
+      if (v.front_image) evidences.push({ url: v.front_image, label: `Front - ${v.vehicle_name}` });
+      if (v.back_image) evidences.push({ url: v.back_image, label: `Back - ${v.vehicle_name}` });
+      if (v.plate_image) evidences.push({ url: v.plate_image, label: `Plate - ${v.vehicle_name}` });
+    });
+    
+    return evidences;
   };
 
   return (
@@ -187,6 +311,7 @@ export default function IncidentHistory() {
         <div className="space-y-3">
           {filteredIncidents.map((incident) => {
             const incidentType = getIncidentType(incident.incident_type);
+            const isOpen = incident.status === 'Open';
             
             return (
               <Card
@@ -203,8 +328,8 @@ export default function IncidentHistory() {
                           {incidentType?.label || incident.incident_type}
                         </h3>
                         <Badge 
-                          variant={incident.status === 'Open' ? 'default' : 'secondary'}
-                          className={incident.status === 'Open' ? 'bg-warning/20 text-warning' : ''}
+                          variant={isOpen ? 'default' : 'secondary'}
+                          className={isOpen ? 'bg-warning/20 text-warning' : ''}
                         >
                           {incident.status}
                         </Badge>
@@ -222,6 +347,20 @@ export default function IncidentHistory() {
                       <Button variant="ghost" size="icon">
                         <Eye className="w-4 h-4" />
                       </Button>
+                      {isOpen && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-primary hover:text-primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddSuspect(incident.id);
+                          }}
+                          title="Add Suspect"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                        </Button>
+                      )}
                       {canDeleteIncident && (
                         <Button
                           variant="ghost"
@@ -268,7 +407,7 @@ export default function IncidentHistory() {
 
           {selectedIncident && (
             <div className="space-y-4">
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Badge variant={selectedIncident.status === 'Open' ? 'default' : 'secondary'}>
                   {selectedIncident.status}
                 </Badge>
@@ -281,75 +420,295 @@ export default function IncidentHistory() {
                 {selectedIncident.report_content || 'No report content available'}
               </div>
 
-              {/* Evidence from Suspects */}
-              {selectedIncident.incident_suspects?.some((s: any) => s.evidences) && (
+              {/* Evidence Collection Section */}
+              {collectEvidenceUrls(selectedIncident).length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-foreground">Suspect Evidence</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedIncident.incident_suspects
-                      .filter((s: any) => s.evidences)
-                      .flatMap((s: any) => 
-                        s.evidences.split('\n').filter((url: string) => url.trim()).map((url: string, idx: number) => (
-                          <a
-                            key={`${s.id}-${idx}`}
-                            href={url.trim()}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative w-16 h-16 rounded-lg overflow-hidden border border-border bg-background block"
-                          >
-                            <img src={url.trim()} alt="Evidence" className="w-full h-full object-cover" />
-                          </a>
-                        ))
-                      )}
+                  <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Eye className="w-4 h-4" />
+                    Evidences Collected ({collectEvidenceUrls(selectedIncident).length})
+                  </h4>
+                  <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                    {collectEvidenceUrls(selectedIncident).map((evidence, idx) => (
+                      <div
+                        key={idx}
+                        className="relative group cursor-pointer"
+                        onClick={() => setPreviewImage(evidence.url)}
+                      >
+                        <div className="aspect-square rounded-lg overflow-hidden border border-border bg-background">
+                          <img 
+                            src={evidence.url} 
+                            alt={evidence.label} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder.svg';
+                            }}
+                          />
+                        </div>
+                        <div className="absolute inset-0 rounded-lg bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Eye className="w-5 h-5 text-foreground" />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground truncate mt-1">{evidence.label}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Vehicle Evidence */}
-              {selectedIncident.incident_vehicles?.some((v: any) => v.front_image || v.back_image || v.plate_image) && (
+              {/* Suspects */}
+              {selectedIncident.incident_suspects?.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-foreground">Vehicle Evidence</h4>
+                  <h4 className="text-sm font-medium text-foreground">Suspects ({selectedIncident.incident_suspects.length})</h4>
                   <div className="space-y-2">
-                    {selectedIncident.incident_vehicles
-                      .filter((v: any) => v.front_image || v.back_image || v.plate_image)
-                      .map((v: any) => (
-                        <div key={v.id} className="p-2 rounded bg-secondary/30 border border-border">
-                          <p className="text-xs text-muted-foreground mb-2">{v.vehicle_name}</p>
-                          <div className="flex gap-2">
-                            {v.front_image && (
-                              <a href={v.front_image} target="_blank" rel="noopener noreferrer" className="relative w-16 h-16 rounded-lg overflow-hidden border border-border bg-background block">
-                                <img src={v.front_image} alt="Front" className="w-full h-full object-cover" />
-                                <span className="absolute bottom-0 left-0 right-0 bg-background/80 text-[10px] text-center">Front</span>
-                              </a>
-                            )}
-                            {v.back_image && (
-                              <a href={v.back_image} target="_blank" rel="noopener noreferrer" className="relative w-16 h-16 rounded-lg overflow-hidden border border-border bg-background block">
-                                <img src={v.back_image} alt="Back" className="w-full h-full object-cover" />
-                                <span className="absolute bottom-0 left-0 right-0 bg-background/80 text-[10px] text-center">Back</span>
-                              </a>
-                            )}
-                            {v.plate_image && (
-                              <a href={v.plate_image} target="_blank" rel="noopener noreferrer" className="relative w-16 h-16 rounded-lg overflow-hidden border border-border bg-background block">
-                                <img src={v.plate_image} alt="Plate" className="w-full h-full object-cover" />
-                                <span className="absolute bottom-0 left-0 right-0 bg-background/80 text-[10px] text-center">Plate</span>
-                              </a>
-                            )}
+                    {selectedIncident.incident_suspects.map((s: any) => (
+                      <div key={s.id} className="p-3 rounded-lg bg-secondary/30 border border-border">
+                        <div className="flex gap-3">
+                          {s.mugshot && (
+                            <div 
+                              className="w-12 h-12 rounded-lg overflow-hidden border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => setPreviewImage(s.mugshot)}
+                            >
+                              <img src={s.mugshot} alt="Mugshot" className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">{s.name}</p>
+                            {s.cid && <p className="text-xs text-muted-foreground">CID: {s.cid}</p>}
+                            <p className="text-xs text-muted-foreground">{s.status} • {s.plead}</p>
+                            {s.charges && <p className="text-xs text-muted-foreground mt-1 truncate">{s.charges}</p>}
+                            <div className="flex gap-3 text-xs mt-1">
+                              {s.is_hut ? (
+                                <span className="text-destructive font-bold">HUT</span>
+                              ) : (
+                                <>
+                                  <span className="text-primary">{s.jail} months</span>
+                                  <span className="text-green-500">${s.fine?.toLocaleString()}</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      ))}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
-              <Button
-                onClick={() => copyReport(selectedIncident.report_content || '')}
-                className="w-full gap-2"
-              >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? 'Copied!' : 'Copy Report'}
-              </Button>
+              {/* Vehicles */}
+              {selectedIncident.incident_vehicles?.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-foreground">Vehicles ({selectedIncident.incident_vehicles.length})</h4>
+                  <div className="space-y-2">
+                    {selectedIncident.incident_vehicles.map((v: any) => (
+                      <div key={v.id} className="p-3 rounded-lg bg-secondary/30 border border-border">
+                        <p className="font-medium text-foreground">{v.vehicle_name}</p>
+                        {v.plate && <p className="text-xs text-muted-foreground">Plate: {v.plate}</p>}
+                        {v.color && <p className="text-xs text-muted-foreground">Color: {v.color}</p>}
+                        {v.registered_owner && <p className="text-xs text-muted-foreground">Owner: {v.registered_owner}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  onClick={() => copyReport(selectedIncident.report_content || '')}
+                  className="flex-1 gap-2"
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copied ? 'Copied!' : 'Copy Report'}
+                </Button>
+                
+                {selectedIncident.status === 'Open' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => {
+                        handleAddSuspect(selectedIncident.id);
+                      }}
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Add Suspect
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="gap-2"
+                      onClick={() => setCloseConfirm(selectedIncident)}
+                    >
+                      <Lock className="w-4 h-4" />
+                      Close Incident
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Suspect Dialog */}
+      <Dialog open={addSuspectDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setAddSuspectDialogOpen(false);
+          setEditingIncidentId(null);
+        }
+      }}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5" />
+              Add Suspect
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Name *</Label>
+                <Input
+                  placeholder="Suspect name"
+                  value={newSuspect.name}
+                  onChange={(e) => setNewSuspect({ ...newSuspect, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">CID</Label>
+                <Input
+                  placeholder="Criminal ID"
+                  value={newSuspect.cid}
+                  onChange={(e) => setNewSuspect({ ...newSuspect, cid: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Mugshot URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Image URL"
+                  value={newSuspect.mugshot}
+                  onChange={(e) => setNewSuspect({ ...newSuspect, mugshot: e.target.value })}
+                />
+                {newSuspect.mugshot && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setPreviewImage(newSuspect.mugshot)}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Status</Label>
+                <Select value={newSuspect.status} onValueChange={(v) => setNewSuspect({ ...newSuspect, status: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUSPECT_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Plead</Label>
+                <Select value={newSuspect.plead} onValueChange={(v) => setNewSuspect({ ...newSuspect, plead: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Guilty">Guilty</SelectItem>
+                    <SelectItem value="Not Guilty">Not Guilty</SelectItem>
+                    <SelectItem value="No Contest">No Contest</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Charges</Label>
+              <Textarea
+                placeholder="Enter charges (e.g., P.C. 201 Criminal Threat, P.C. 202 Assault)"
+                value={newSuspect.charges}
+                onChange={(e) => setNewSuspect({ ...newSuspect, charges: e.target.value })}
+                rows={2}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Jail (months)</Label>
+                <Input
+                  type="number"
+                  value={newSuspect.jail}
+                  onChange={(e) => setNewSuspect({ ...newSuspect, jail: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Fine ($)</Label>
+                <Input
+                  type="number"
+                  value={newSuspect.fine}
+                  onChange={(e) => setNewSuspect({ ...newSuspect, fine: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Confiscated Items</Label>
+              <Textarea
+                placeholder="Items confiscated"
+                value={newSuspect.confiscated_items}
+                onChange={(e) => setNewSuspect({ ...newSuspect, confiscated_items: e.target.value })}
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Evidence URLs (one per line)</Label>
+              <Textarea
+                placeholder="Evidence image URLs"
+                value={newSuspect.evidences}
+                onChange={(e) => setNewSuspect({ ...newSuspect, evidences: e.target.value })}
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Tag</Label>
+              <Input
+                placeholder="Optional tag"
+                value={newSuspect.tag}
+                onChange={(e) => setNewSuspect({ ...newSuspect, tag: e.target.value })}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is_hut"
+                checked={newSuspect.is_hut}
+                onChange={(e) => setNewSuspect({ ...newSuspect, is_hut: e.target.checked })}
+                className="rounded border-border"
+              />
+              <Label htmlFor="is_hut" className="text-xs cursor-pointer">Hold Until Trial (HUT)</Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddSuspectDialogOpen(false)}>Cancel</Button>
+            <Button onClick={submitNewSuspect} disabled={addSuspectMutation.isPending}>
+              {addSuspectMutation.isPending ? 'Adding...' : 'Add Suspect'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -373,6 +732,27 @@ export default function IncidentHistory() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Close Incident Confirmation */}
+      <AlertDialog open={!!closeConfirm} onOpenChange={() => setCloseConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Close Incident?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Closing this incident will prevent further modifications. Officers will no longer be able to add suspects or edit this incident.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => closeConfirm && closeIncidentMutation.mutate(closeConfirm.id)}>
+              Close Incident
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Image Preview Modal */}
+      <ImagePreviewModal imageUrl={previewImage} onClose={() => setPreviewImage(null)} />
     </div>
   );
 }
