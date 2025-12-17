@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      duty_logs: {
+        Row: {
+          created_at: string
+          id: string
+          license_id: string
+          rank_at_time: string | null
+          raw_message: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          license_id: string
+          rank_at_time?: string | null
+          raw_message?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          license_id?: string
+          rank_at_time?: string | null
+          raw_message?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       incident_officers: {
         Row: {
           id: string
