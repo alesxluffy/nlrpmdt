@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import SOP from "./pages/SOP";
 import Roster from "./pages/Roster";
@@ -27,6 +28,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<MainLayout><Dashboard /></MainLayout>} />
             <Route path="/sop" element={<MainLayout><SOP /></MainLayout>} />
             <Route path="/roster" element={<MainLayout><Roster /></MainLayout>} />
