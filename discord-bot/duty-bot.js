@@ -93,7 +93,10 @@ client.on('messageCreate', async (message) => {
   // Check if message matches duty format variants:
   // (license:xxxxx) went on-duty/off-duty. (Rank)
   // (license:xxxxx) went on duty/off duty. (Rank)
-  const isDutyMessage = /went\s+(on[- ]duty|off[- ]duty)/i.test(normalized);
+  // 10-41 / 10-42 messages that include the license id
+  const isDutyMessage =
+    /\blicense:/i.test(content) &&
+    (/\b10[- ]?4[12]\b/i.test(content) || /\b(on|off)[- ]?duty\b/i.test(content));
 
   if (isDutyMessage) {
     console.log(`📨 Duty message detected: ${content}`);
