@@ -4,10 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Lock, User, BadgeCheck, Mail, AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Shield, Lock, User, BadgeCheck, Mail, AlertTriangle, Radio, Fingerprint } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -28,9 +26,9 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse-glow">
-          <Shield className="w-16 h-16 text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-[hsl(222,47%,4%)]">
+        <div className="animate-pulse">
+          <Shield className="w-20 h-20 text-primary" />
         </div>
       </div>
     );
@@ -65,7 +63,6 @@ export default function Auth() {
       return;
     }
 
-    // Validate email is approved
     const { data: isValid, error: validateError } = await supabase
       .rpc('validate_email_access', { email_input: signupEmail.trim() });
 
@@ -88,7 +85,6 @@ export default function Auth() {
         toast.error(error.message || 'Failed to create account');
       }
     } else {
-      // Mark email as used
       if (data?.user?.id) {
         await supabase.rpc('use_approved_email', { 
           email_input: signupEmail.trim(), 
@@ -102,166 +98,285 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      {/* Background effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-police-blue/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-police-red/10 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-[hsl(222,47%,4%)] relative overflow-hidden">
+      {/* Scan lines overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(217,91%,60%) 2px, hsl(217,91%,60%) 4px)',
+        backgroundSize: '100% 4px'
+      }} />
+      
+      {/* Grid pattern */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{
+        backgroundImage: `
+          linear-gradient(hsl(217,91%,60%) 1px, transparent 1px),
+          linear-gradient(90deg, hsl(217,91%,60%) 1px, transparent 1px)
+        `,
+        backgroundSize: '50px 50px'
+      }} />
 
-      <Card className="w-full max-w-md relative z-10 bg-card/80 backdrop-blur-sm border-border">
-        <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-20 h-20 police-gradient rounded-full flex items-center justify-center glow-blue">
-            <Shield className="w-10 h-10 text-primary-foreground" />
+      {/* Ambient glow effects */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/5 blur-[100px] rounded-full" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[200px] bg-police-red/5 blur-[80px] rounded-full" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[200px] bg-police-blue/5 blur-[80px] rounded-full" />
+
+      {/* Main terminal container */}
+      <div className="relative z-10 w-full max-w-lg mx-4">
+        {/* Terminal header bar */}
+        <div className="bg-[hsl(222,47%,8%)] border border-border/50 rounded-t-lg px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-police-red/80" />
+            <div className="w-3 h-3 rounded-full bg-police-gold/80" />
+            <div className="w-3 h-3 rounded-full bg-success/80" />
           </div>
-          <div>
-            <CardTitle className="text-2xl font-bold">Mobile Data Terminal</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              GTA V Roleplay - Law Enforcement Access
-            </CardDescription>
+          <span className="font-mono text-xs text-muted-foreground tracking-wider">MDT-TERMINAL-v2.4.1</span>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Radio className="w-3 h-3 animate-pulse text-success" />
+            <span className="font-mono text-xs">CONNECTED</span>
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Register</TabsTrigger>
-            </TabsList>
+        {/* Main content */}
+        <div className="bg-[hsl(222,47%,6%)]/95 backdrop-blur-xl border-x border-b border-border/50 rounded-b-lg overflow-hidden">
+          {/* Header section */}
+          <div className="px-8 pt-8 pb-6 text-center border-b border-border/30">
+            {/* Badge icon */}
+            <div className="relative mx-auto w-24 h-24 mb-4">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+              <div className="relative w-full h-full bg-gradient-to-br from-[hsl(222,47%,12%)] to-[hsl(222,47%,8%)] rounded-full border-2 border-primary/30 flex items-center justify-center">
+                <Shield className="w-12 h-12 text-primary" />
+              </div>
+              {/* Status ring */}
+              <div className="absolute inset-0 rounded-full border-2 border-primary/50 animate-[spin_8s_linear_infinite]" style={{
+                borderTopColor: 'transparent',
+                borderRightColor: 'transparent'
+              }} />
+            </div>
+            
+            <h1 className="font-mono text-xl font-bold tracking-wider text-foreground mb-1">
+              MOBILE DATA TERMINAL
+            </h1>
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <div className="w-8 h-px bg-border" />
+              <span className="font-mono text-xs tracking-[0.2em] uppercase">Law Enforcement Access</span>
+              <div className="w-8 h-px bg-border" />
+            </div>
+            
+            {/* System status */}
+            <div className="mt-4 flex items-center justify-center gap-4 text-xs font-mono">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                <span className="text-muted-foreground">SYSTEM ONLINE</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Fingerprint className="w-3 h-3 text-primary" />
+                <span className="text-muted-foreground">SECURE CONNECTION</span>
+              </div>
+            </div>
+          </div>
 
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="officer@lspd.gov"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
+          {/* Form section */}
+          <div className="p-8">
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-[hsl(222,47%,8%)] p-1 rounded-lg">
+                <TabsTrigger 
+                  value="login" 
+                  className="font-mono text-sm tracking-wide data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-all"
+                >
+                  SIGN IN
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="signup" 
+                  className="font-mono text-sm tracking-wide data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md transition-all"
+                >
+                  REGISTER
+                </TabsTrigger>
+              </TabsList>
 
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? 'Authenticating...' : 'Access Terminal'}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Authorized Personnel Only</AlertTitle>
-                  <AlertDescription className="text-xs">
-                    Registration requires your email to be pre-approved by High Command.
-                  </AlertDescription>
-                </Alert>
-
-                <div className="grid grid-cols-2 gap-4">
+              <TabsContent value="login" className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="first-name">First Name</Label>
+                    <Label htmlFor="login-email" className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
+                      Email Address
+                    </Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
-                        id="first-name"
-                        placeholder="John"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        className="pl-10"
+                        id="login-email"
+                        type="email"
+                        placeholder="officer@lspd.gov"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        className="pl-10 bg-[hsl(222,47%,8%)] border-border/50 font-mono text-sm focus:border-primary/50 focus:ring-primary/20"
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="last-name">Last Name</Label>
-                    <Input
-                      id="last-name"
-                      placeholder="Doe"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required
-                    />
+                    <Label htmlFor="login-password" className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="login-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        className="pl-10 bg-[hsl(222,47%,8%)] border-border/50 font-mono text-sm focus:border-primary/50 focus:ring-primary/20"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="badge-number">Badge Number</Label>
-                  <div className="relative">
-                    <BadgeCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="badge-number"
-                      placeholder="LSPD-001"
-                      value={badgeNumber}
-                      onChange={(e) => setBadgeNumber(e.target.value)}
-                      className="pl-10"
-                    />
+                  <Button 
+                    type="submit" 
+                    className="w-full font-mono tracking-wider uppercase bg-primary hover:bg-primary/90 text-primary-foreground h-11" 
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        AUTHENTICATING...
+                      </span>
+                    ) : (
+                      'ACCESS TERMINAL'
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="signup" className="space-y-4">
+                <form onSubmit={handleSignup} className="space-y-4">
+                  {/* Warning banner */}
+                  <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-mono text-xs font-semibold text-destructive tracking-wide">AUTHORIZED PERSONNEL ONLY</p>
+                      <p className="font-mono text-xs text-muted-foreground mt-0.5">
+                        Registration requires pre-approval by High Command.
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="officer@lspd.gov"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="first-name" className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
+                        First Name
+                      </Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="first-name"
+                          placeholder="John"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="pl-10 bg-[hsl(222,47%,8%)] border-border/50 font-mono text-sm focus:border-primary/50 focus:ring-primary/20"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="last-name" className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
+                        Last Name
+                      </Label>
+                      <Input
+                        id="last-name"
+                        placeholder="Doe"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="bg-[hsl(222,47%,8%)] border-border/50 font-mono text-sm focus:border-primary/50 focus:ring-primary/20"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      className="pl-10"
-                      minLength={6}
-                      required
-                    />
+                  <div className="space-y-2">
+                    <Label htmlFor="badge-number" className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
+                      Badge Number
+                    </Label>
+                    <div className="relative">
+                      <BadgeCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="badge-number"
+                        placeholder="LSPD-001"
+                        value={badgeNumber}
+                        onChange={(e) => setBadgeNumber(e.target.value)}
+                        className="pl-10 bg-[hsl(222,47%,8%)] border-border/50 font-mono text-sm focus:border-primary/50 focus:ring-primary/20"
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? 'Creating Account...' : 'Join the Force'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email" className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
+                      Email Address
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="officer@lspd.gov"
+                        value={signupEmail}
+                        onChange={(e) => setSignupEmail(e.target.value)}
+                        className="pl-10 bg-[hsl(222,47%,8%)] border-border/50 font-mono text-sm focus:border-primary/50 focus:ring-primary/20"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password" className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                        className="pl-10 bg-[hsl(222,47%,8%)] border-border/50 font-mono text-sm focus:border-primary/50 focus:ring-primary/20"
+                        minLength={6}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full font-mono tracking-wider uppercase bg-primary hover:bg-primary/90 text-primary-foreground h-11" 
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        PROCESSING...
+                      </span>
+                    ) : (
+                      'REQUEST ACCESS'
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Footer */}
+          <div className="px-8 py-4 border-t border-border/30 bg-[hsl(222,47%,5%)]">
+            <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
+              <span>© {new Date().getFullYear()} UNIFIED POLICE DEPT</span>
+              <span className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                ENCRYPTED
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
