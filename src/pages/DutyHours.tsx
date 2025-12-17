@@ -37,7 +37,7 @@ const DutyHours = () => {
 
   const webhookUrl = `https://dvaudymlldvgjsltduus.supabase.co/functions/v1/duty-webhook`;
 
-  // Fetch profiles with license_id
+  // Fetch profiles with license_id - refresh every 10 seconds
   const { data: profiles } = useQuery({
     queryKey: ["profiles-with-license"],
     queryFn: async () => {
@@ -49,13 +49,13 @@ const DutyHours = () => {
       if (error) throw error;
       return data;
     },
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 5_000,
+    refetchInterval: 10_000,
     refetchOnWindowFocus: true,
   });
 
-  // Fetch duty logs
-  const { data: dutyLogs } = useQuery({
+  // Fetch duty logs - refresh every 10 seconds
+  const { data: dutyLogs, dataUpdatedAt } = useQuery({
     queryKey: ["duty-logs"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -215,7 +215,14 @@ const DutyHours = () => {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Duty Hours</h1>
-            <p className="text-muted-foreground">Track officer on-duty time via Discord webhook</p>
+            <p className="text-muted-foreground">
+              Track officer on-duty time via Discord webhook
+              {dataUpdatedAt && (
+                <span className="ml-2 text-xs text-muted-foreground/70">
+                  • Last updated: {format(new Date(dataUpdatedAt), "h:mm:ss a")}
+                </span>
+              )}
+            </p>
           </div>
         </div>
 
