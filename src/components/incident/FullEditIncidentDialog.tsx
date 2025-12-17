@@ -941,6 +941,31 @@ export function FullEditIncidentDialog({ open, onOpenChange, incident }: FullEdi
                           </div>
                         </div>
 
+                        {/* Evidence Thumbnails */}
+                        {suspect.evidences && editingSuspect !== index && (
+                          <div className="space-y-2">
+                            <Label className="text-xs text-muted-foreground">Evidences</Label>
+                            <div className="flex flex-wrap gap-2">
+                              {suspect.evidences.split('\n').filter(url => url.trim()).map((url, i) => (
+                                <div
+                                  key={i}
+                                  className="w-16 h-16 rounded-lg overflow-hidden border border-border cursor-pointer hover:border-primary transition-colors"
+                                  onClick={() => setPreviewImage(url.trim())}
+                                >
+                                  <img 
+                                    src={url.trim()} 
+                                    alt={`Evidence ${i + 1}`} 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {editingSuspect === index && (
                           <div className="space-y-3 pt-3 border-t border-border">
                             {/* Basic Info */}
@@ -1139,6 +1164,26 @@ export function FullEditIncidentDialog({ open, onOpenChange, incident }: FullEdi
                                   onChange={(e) => updateSuspect(index, { evidences: e.target.value })}
                                   rows={2}
                                 />
+                                {suspect.evidences && (
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {suspect.evidences.split('\n').filter(url => url.trim()).map((url, i) => (
+                                      <div
+                                        key={i}
+                                        className="w-12 h-12 rounded overflow-hidden border border-border cursor-pointer hover:border-primary transition-colors"
+                                        onClick={() => setPreviewImage(url.trim())}
+                                      >
+                                        <img 
+                                          src={url.trim()} 
+                                          alt={`Evidence ${i + 1}`} 
+                                          className="w-full h-full object-cover"
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).src = '/placeholder.svg';
+                                          }}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             </div>
 
