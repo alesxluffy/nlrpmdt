@@ -15,7 +15,6 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const https = require('https');
 
-// Configuration - set these in your hosting provider (Railway/Render/etc.)
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const DUTY_CHANNEL_ID = process.env.DUTY_CHANNEL_ID;
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
