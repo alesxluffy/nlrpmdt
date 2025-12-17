@@ -13,11 +13,63 @@
  */
 
 const { Client, GatewayIntentBits } = require('discord.js');
+const https = require('https');
 
-// Configuration - Replace these with your values
+// Configuration - set these in your hosting provider (Railway/Render/etc.)
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const DUTY_CHANNEL_ID = process.env.DUTY_CHANNEL_ID;
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
+
+if (!BOT_TOKEN || !DUTY_CHANNEL_ID || !WEBHOOK_URL) {
+  console.error('❌ Missing required environment variables.');
+  console.error('Required: BOT_TOKEN, DUTY_CHANNEL_ID, WEBHOOK_URL');
+  console.error('Received:', {
+    BOT_TOKEN: BOT_TOKEN ? '[set]' : '[missing]',
+    DUTY_CHANNEL_ID: DUTY_CHANNEL_ID ? '[set]' : '[missing]',
+    WEBHOOK_URL: WEBHOOK_URL ? '[set]' : '[missing]',
+  });
+  process.exit(1);
+}
+
+function postJson(urlString, body) {
+  const url = new URL(urlString);
+  const payload = JSON.stringify(body);
+
+  const options = {
+    method: 'POST',
+    hostname: url.hostname,
+    path: `${url.pathname}${url.search}`,
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload),
+    },
+  };
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let raw = '';
+      res.on('data', (chunk) => (raw += chunk));
+      res.on('end', () => {
+        let data = raw;
+        try {
+          data = raw ? JSON.parse(raw) : null;
+        } catch {
+          // keep raw string
+        }
+
+        resolve({
+          ok: (res.statusCode ?? 0) >= 200 && (res.statusCode ?? 0) < 300,
+          status: res.statusCode ?? 0,
+          data,
+        });
+      });
+    });
+
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
 
 const client = new Client({
   intents: [
@@ -35,36 +87,30 @@ client.once('ready', () => {
 client.on('messageCreate', async (message) => {
   // Only process messages from the duty channel
   if (message.channel.id !== DUTY_CHANNEL_ID) return;
-  
-  // Ignore bot messages (optional - remove if your duty bot posts messages)
-  // if (message.author.bot) return;
-  
+
   const content = message.content;
-  
+
   // Check if message matches duty format: (license:xxxxx) went on-duty/off-duty. (Rank)
   if (content.includes('went on-duty') || content.includes('went off-duty')) {
     console.log(`📨 Duty message detected: ${content}`);
-    
+
     try {
-      const response = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: content }),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
+      const { ok, status, data } = await postJson(WEBHOOK_URL, { content });
+
+      if (ok) {
         console.log('✅ Duty log saved:', data);
       } else {
-        console.error('❌ Error saving duty log:', data);
+        console.error(`❌ Error saving duty log (HTTP ${status}):`, data);
       }
     } catch (error) {
-      console.error('❌ Failed to send to webhook:', error.message);
+      console.error('❌ Failed to send to webhook:', error?.message || error);
     }
   }
 });
 
-client.login(BOT_TOKEN);
+client.login(BOT_TOKEN).catch((err) => {
+  console.error('❌ Discord login failed. Check BOT_TOKEN and bot permissions/intents.');
+  console.error(err);
+  process.exit(1);
+});
+
