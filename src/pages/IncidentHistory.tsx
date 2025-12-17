@@ -35,7 +35,7 @@ import { toast } from 'sonner';
 import { INCIDENT_TYPES } from '@/data/incidentData';
 import { ImagePreviewModal } from '@/components/ui/image-preview-modal';
 import { AddSuspectDialog } from '@/components/incident/AddSuspectDialog';
-import { EditIncidentDialog } from '@/components/incident/EditIncidentDialog';
+import { FullEditIncidentDialog } from '@/components/incident/FullEditIncidentDialog';
 
 export default function IncidentHistory() {
   const { canDeleteIncident } = useAuth();
@@ -500,8 +500,8 @@ export default function IncidentHistory() {
         incidentId={addSuspectIncidentId || ''}
       />
 
-      {/* Edit Incident Dialog */}
-      <EditIncidentDialog
+      {/* Full Edit Incident Dialog */}
+      <FullEditIncidentDialog
         open={!!editIncident}
         onOpenChange={(open) => !open && setEditIncident(null)}
         incident={editIncident}
