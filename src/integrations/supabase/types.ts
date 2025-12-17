@@ -131,24 +131,36 @@ export type Database = {
       }
       incident_vehicles: {
         Row: {
+          back_image: string | null
           color: string | null
+          front_image: string | null
           id: string
           incident_id: string | null
           plate: string | null
+          plate_image: string | null
+          registered_owner: string | null
           vehicle_name: string
         }
         Insert: {
+          back_image?: string | null
           color?: string | null
+          front_image?: string | null
           id?: string
           incident_id?: string | null
           plate?: string | null
+          plate_image?: string | null
+          registered_owner?: string | null
           vehicle_name: string
         }
         Update: {
+          back_image?: string | null
           color?: string | null
+          front_image?: string | null
           id?: string
           incident_id?: string | null
           plate?: string | null
+          plate_image?: string | null
+          registered_owner?: string | null
           vehicle_name?: string
         }
         Relationships: [

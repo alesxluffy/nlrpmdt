@@ -26,7 +26,9 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   canEditRoster: boolean;
   canEditSOP: boolean;
+  canEditIncident: boolean;
   canDeleteIncident: boolean;
+  canDeleteOfficer: boolean;
   canManageRoles: boolean;
 }
 
@@ -126,14 +128,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Permission helpers
   const canEditRoster = role === 'ftd' || role === 'high_command';
   const canEditSOP = role === 'high_command';
+  const canEditIncident = !!user; // All authenticated users can edit
   const canDeleteIncident = role === 'ftd' || role === 'high_command';
+  const canDeleteOfficer = role === 'ftd' || role === 'high_command';
   const canManageRoles = role === 'high_command';
 
   return (
     <AuthContext.Provider value={{ 
       user, session, profile, role, loading, 
       signIn, signUp, signOut,
-      canEditRoster, canEditSOP, canDeleteIncident, canManageRoles
+      canEditRoster, canEditSOP, canEditIncident, canDeleteIncident, canDeleteOfficer, canManageRoles
     }}>
       {children}
     </AuthContext.Provider>

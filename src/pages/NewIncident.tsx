@@ -59,6 +59,9 @@ export interface IncidentFormData {
     plate: string;
     color: string;
     registeredTo: string;
+    frontImage: string;
+    backImage: string;
+    plateImage: string;
   }>;
   notes: string;
   // 10-90 specific fields
@@ -205,6 +208,10 @@ export default function NewIncident() {
               vehicle_name: v.vehicle,
               plate: v.plate || null,
               color: v.color || null,
+              registered_owner: v.registeredTo || null,
+              front_image: v.frontImage || null,
+              back_image: v.backImage || null,
+              plate_image: v.plateImage || null,
             }))
           );
         if (vehiclesError) throw vehiclesError;

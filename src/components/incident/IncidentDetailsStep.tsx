@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -77,32 +76,28 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
     });
   };
 
-  const isEvidenceSelected = (evidenceType: string) => {
-    return formData.incidentEvidences.some(e => e.type === evidenceType);
+  const getEvidencesByType = (evidenceType: string) => {
+    return formData.incidentEvidences.filter(e => e.type === evidenceType);
   };
 
-  const toggleEvidence = (evidenceType: string) => {
-    if (isEvidenceSelected(evidenceType)) {
-      updateFormData({ 
-        incidentEvidences: formData.incidentEvidences.filter(e => e.type !== evidenceType) 
-      });
-    } else {
-      updateFormData({ 
-        incidentEvidences: [...formData.incidentEvidences, { type: evidenceType, url: '' }] 
-      });
-    }
-  };
-
-  const updateEvidenceUrl = (evidenceType: string, url: string) => {
-    updateFormData({
-      incidentEvidences: formData.incidentEvidences.map(e => 
-        e.type === evidenceType ? { ...e, url } : e
-      )
+  const addEvidence = (evidenceType: string) => {
+    updateFormData({ 
+      incidentEvidences: [...formData.incidentEvidences, { type: evidenceType, url: '' }] 
     });
   };
 
-  const getEvidenceUrl = (evidenceType: string) => {
-    return formData.incidentEvidences.find(e => e.type === evidenceType)?.url || '';
+  const removeEvidence = (index: number) => {
+    updateFormData({ 
+      incidentEvidences: formData.incidentEvidences.filter((_, i) => i !== index) 
+    });
+  };
+
+  const updateEvidenceUrl = (index: number, url: string) => {
+    updateFormData({
+      incidentEvidences: formData.incidentEvidences.map((e, i) => 
+        i === index ? { ...e, url } : e
+      )
+    });
   };
 
   return (
@@ -253,60 +248,86 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
       <div className="space-y-4 p-4 rounded-lg bg-secondary/30 border border-border">
         <Label className="text-base font-medium">Evidence Collected</Label>
         <div className="space-y-4">
-          {EVIDENCE_TYPES.map((evidence) => (
-            <div key={evidence} className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id={evidence}
-                  checked={isEvidenceSelected(evidence)}
-                  onCheckedChange={() => toggleEvidence(evidence)}
-                />
-                <label
-                  htmlFor={evidence}
-                  className="text-sm cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {evidence}
-                </label>
-              </div>
-              
-              {isEvidenceSelected(evidence) && (
-                <div className="ml-6 space-y-2">
-                  <Input
-                    placeholder={`${evidence} screenshot URL (Discord, Imgur, etc.)`}
-                    value={getEvidenceUrl(evidence)}
-                    onChange={(e) => updateEvidenceUrl(evidence, e.target.value)}
-                    className="text-sm"
-                  />
-                  {getEvidenceUrl(evidence) && (
-                    <div 
-                      className="relative w-full max-w-xs rounded-lg overflow-hidden border border-border bg-background cursor-pointer group"
-                      onClick={() => setPreviewImage(getEvidenceUrl(evidence))}
-                    >
-                      <img 
-                        src={getEvidenceUrl(evidence)} 
-                        alt={`${evidence} preview`}
-                        className="w-full h-auto max-h-48 object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Eye className="w-6 h-6 text-foreground" />
-                      </div>
-                    </div>
-                  )}
+          {EVIDENCE_TYPES.map((evidenceType) => {
+            const evidencesOfType = getEvidencesByType(evidenceType);
+            return (
+              <div key={evidenceType} className="space-y-2 p-3 rounded-lg bg-background/50 border border-border/50">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">{evidenceType}</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addEvidence(evidenceType)}
+                    className="gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add {evidenceType}
+                  </Button>
                 </div>
-              )}
-            </div>
-          ))}
+                
+                {evidencesOfType.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {evidencesOfType.map((evidence, idx) => {
+                      const globalIndex = formData.incidentEvidences.findIndex(
+                        (e, i) => e.type === evidenceType && 
+                        formData.incidentEvidences.slice(0, i).filter(x => x.type === evidenceType).length === idx
+                      );
+                      return (
+                        <div key={idx} className="flex items-start gap-2">
+                          <div className="flex-1 space-y-2">
+                            <Input
+                              placeholder={`${evidenceType} #${idx + 1} URL (Discord, Imgur, etc.)`}
+                              value={evidence.url}
+                              onChange={(e) => updateEvidenceUrl(globalIndex, e.target.value)}
+                              className="text-sm"
+                            />
+                            {evidence.url && (
+                              <div 
+                                className="relative w-24 h-24 rounded-lg overflow-hidden border border-border bg-background cursor-pointer group"
+                                onClick={() => setPreviewImage(evidence.url)}
+                              >
+                                <img 
+                                  src={evidence.url} 
+                                  alt={`${evidenceType} ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <Eye className="w-4 h-4 text-foreground" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeEvidence(globalIndex)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
         
-        {formData.incidentEvidences.length > 0 && (
+        {formData.incidentEvidences.filter(e => e.url).length > 0 && (
           <div className="mt-4 pt-4 border-t border-border">
-            <Label className="text-sm text-muted-foreground mb-2 block">Collected Evidence Summary</Label>
+            <Label className="text-sm text-muted-foreground mb-2 block">
+              Collected Evidence Summary ({formData.incidentEvidences.filter(e => e.url).length} items)
+            </Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {formData.incidentEvidences.filter(e => e.url).map((evidence) => (
-                <div key={evidence.type} className="flex items-start gap-2 p-2 bg-background rounded border border-border">
+              {formData.incidentEvidences.filter(e => e.url).map((evidence, idx) => (
+                <div key={idx} className="flex items-start gap-2 p-2 bg-background rounded border border-border">
                   <Image className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <span className="text-sm font-medium block">{evidence.type}</span>
@@ -319,13 +340,6 @@ export default function IncidentDetailsStep({ formData, updateFormData }: Incide
                       {evidence.url}
                     </a>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleEvidence(evidence.type)}
-                    className="text-muted-foreground hover:text-destructive flex-shrink-0"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
                 </div>
               ))}
             </div>

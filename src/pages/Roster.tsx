@@ -28,8 +28,18 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Search, Users, Shield, Filter, Pencil } from 'lucide-react';
+import { Search, Users, Shield, Filter, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const rankColors: Record<string, string> = {
@@ -87,12 +97,13 @@ const statuses = ['Active', 'On Duty', 'Off Duty', 'LOA', 'Suspended'];
 const divisions = ['SASP', 'BCSO', 'SAHP', 'Patrol', 'Detectives', 'SWAT', 'Traffic', 'K-9', 'Training'];
 
 export default function Roster() {
-  const { canEditRoster } = useAuth();
+  const { canEditRoster, canDeleteOfficer } = useAuth();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [divisionFilter, setDivisionFilter] = useState('all');
   const [rankFilter, setRankFilter] = useState('all');
   const [editingOfficer, setEditingOfficer] = useState<any>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<any>(null);
   const [editForm, setEditForm] = useState({
     badge_number: '',
     rank: '',
@@ -128,6 +139,21 @@ export default function Roster() {
     },
     onError: () => {
       toast.error('Failed to update officer');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('profiles').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['officers-roster'] });
+      toast.success('Officer deleted from roster');
+      setDeleteConfirm(null);
+    },
+    onError: () => {
+      toast.error('Failed to delete officer');
     },
   });
 
@@ -248,7 +274,7 @@ export default function Roster() {
                   <TableHead className="text-muted-foreground">Rank</TableHead>
                   <TableHead className="text-muted-foreground">Division</TableHead>
                   <TableHead className="text-muted-foreground">Status</TableHead>
-                  {canEditRoster && <TableHead className="text-muted-foreground w-20">Actions</TableHead>}
+                  {(canEditRoster || canDeleteOfficer) && <TableHead className="text-muted-foreground w-24">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -276,15 +302,29 @@ export default function Roster() {
                         {officer.status || 'Active'}
                       </Badge>
                     </TableCell>
-                    {canEditRoster && (
+                    {(canEditRoster || canDeleteOfficer) && (
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(officer)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          {canEditRoster && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(officer)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {canDeleteOfficer && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setDeleteConfirm(officer)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -377,6 +417,27 @@ export default function Roster() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Officer?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove {deleteConfirm?.first_name} {deleteConfirm?.last_name} from the roster. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteConfirm && deleteMutation.mutate(deleteConfirm.id)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
