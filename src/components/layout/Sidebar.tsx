@@ -111,6 +111,13 @@ export default function Sidebar() {
           </div>
         )}
         
+        {/* Credit */}
+        {!collapsed && (
+          <div className="px-3 py-1 mb-2 text-xs text-muted-foreground/60 font-mono">
+            Made by ALESxLuffy
+          </div>
+        )}
+        
         <Button
           variant="ghost"
           className={cn('w-full justify-start gap-3', collapsed && 'justify-center')}

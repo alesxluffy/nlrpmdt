@@ -459,6 +459,9 @@ export default function Auth() {
                 ENCRYPTED
               </span>
             </div>
+            <div className="text-center mt-2 text-xs font-mono text-muted-foreground/60">
+              Made by ALESxLuffy
+            </div>
           </div>
         </div>
       </div>
