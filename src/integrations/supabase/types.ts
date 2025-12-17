@@ -271,36 +271,54 @@ export type Database = {
           avatar_url: string | null
           badge_number: string | null
           created_at: string | null
+          discord: string | null
           division: string | null
           first_name: string
+          ic_phone: string | null
           id: string
           last_name: string
+          license_id: string | null
           rank: string | null
+          state_id: string | null
           status: string | null
+          steam_name: string | null
+          steam_url: string | null
           updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
           badge_number?: string | null
           created_at?: string | null
+          discord?: string | null
           division?: string | null
           first_name: string
+          ic_phone?: string | null
           id: string
           last_name: string
+          license_id?: string | null
           rank?: string | null
+          state_id?: string | null
           status?: string | null
+          steam_name?: string | null
+          steam_url?: string | null
           updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
           badge_number?: string | null
           created_at?: string | null
+          discord?: string | null
           division?: string | null
           first_name?: string
+          ic_phone?: string | null
           id?: string
           last_name?: string
+          license_id?: string | null
           rank?: string | null
+          state_id?: string | null
           status?: string | null
+          steam_name?: string | null
+          steam_url?: string | null
           updated_at?: string | null
         }
         Relationships: []

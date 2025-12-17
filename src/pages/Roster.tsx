@@ -109,6 +109,12 @@ export default function Roster() {
     rank: '',
     division: '',
     status: '',
+    steam_name: '',
+    steam_url: '',
+    license_id: '',
+    ic_phone: '',
+    discord: '',
+    state_id: '',
   });
 
   const { data: officers, isLoading } = useQuery({
@@ -164,6 +170,12 @@ export default function Roster() {
       rank: officer.rank || 'Cadet',
       division: officer.division || 'Patrol',
       status: officer.status || 'Active',
+      steam_name: officer.steam_name || '',
+      steam_url: officer.steam_url || '',
+      license_id: officer.license_id || '',
+      ic_phone: officer.ic_phone || '',
+      discord: officer.discord || '',
+      state_id: officer.state_id || '',
     });
   };
 
@@ -354,42 +366,55 @@ export default function Roster() {
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Badge Number</Label>
-              <Input
-                value={editForm.badge_number}
-                onChange={(e) => setEditForm(f => ({ ...f, badge_number: e.target.value }))}
-                placeholder="Enter badge number"
-              />
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Badge Number</Label>
+                <Input
+                  value={editForm.badge_number}
+                  onChange={(e) => setEditForm(f => ({ ...f, badge_number: e.target.value }))}
+                  placeholder="Enter badge number"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>State ID</Label>
+                <Input
+                  value={editForm.state_id}
+                  onChange={(e) => setEditForm(f => ({ ...f, state_id: e.target.value }))}
+                  placeholder="Enter state ID"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Rank</Label>
-              <Select value={editForm.rank} onValueChange={(v) => setEditForm(f => ({ ...f, rank: v }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ranks.map(rank => (
-                    <SelectItem key={rank} value={rank}>{rank}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Rank</Label>
+                <Select value={editForm.rank} onValueChange={(v) => setEditForm(f => ({ ...f, rank: v }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ranks.map(rank => (
+                      <SelectItem key={rank} value={rank}>{rank}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Division</Label>
-              <Select value={editForm.division} onValueChange={(v) => setEditForm(f => ({ ...f, division: v }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {divisions.map(division => (
-                    <SelectItem key={division} value={division}>{division}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label>Division</Label>
+                <Select value={editForm.division} onValueChange={(v) => setEditForm(f => ({ ...f, division: v }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {divisions.map(division => (
+                      <SelectItem key={division} value={division}>{division}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -404,6 +429,59 @@ export default function Roster() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="border-t border-border pt-4 mt-4">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Additional Information</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Steam Name</Label>
+                  <Input
+                    value={editForm.steam_name}
+                    onChange={(e) => setEditForm(f => ({ ...f, steam_name: e.target.value }))}
+                    placeholder="Steam username"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Discord</Label>
+                  <Input
+                    value={editForm.discord}
+                    onChange={(e) => setEditForm(f => ({ ...f, discord: e.target.value }))}
+                    placeholder="Discord username"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <Label>Steam URL</Label>
+                <Input
+                  value={editForm.steam_url}
+                  onChange={(e) => setEditForm(f => ({ ...f, steam_url: e.target.value }))}
+                  placeholder="https://steamcommunity.com/id/..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label>License ID</Label>
+                  <Input
+                    value={editForm.license_id}
+                    onChange={(e) => setEditForm(f => ({ ...f, license_id: e.target.value }))}
+                    placeholder="License identifier"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>I.C Phone Number</Label>
+                  <Input
+                    value={editForm.ic_phone}
+                    onChange={(e) => setEditForm(f => ({ ...f, ic_phone: e.target.value }))}
+                    placeholder="In-character phone"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
