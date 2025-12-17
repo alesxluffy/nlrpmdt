@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Lock, User, BadgeCheck, Mail, Key, AlertTriangle } from 'lucide-react';
+import { Shield, Lock, User, BadgeCheck, Mail, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,7 +25,6 @@ export default function Auth() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [badgeNumber, setBadgeNumber] = useState('');
-  const [invitationCode, setInvitationCode] = useState('');
 
   if (loading) {
     return (
@@ -66,18 +65,12 @@ export default function Auth() {
       return;
     }
 
-    if (!invitationCode.trim()) {
-      toast.error('Please enter an invitation code');
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Validate invitation code first
+    // Validate email is approved
     const { data: isValid, error: validateError } = await supabase
-      .rpc('validate_invitation_code', { code_input: invitationCode.trim() });
+      .rpc('validate_email_access', { email_input: signupEmail.trim() });
 
     if (validateError || !isValid) {
-      toast.error('Invalid or expired invitation code');
+      toast.error('Your email is not authorized for registration. Contact High Command.');
       setIsSubmitting(false);
       return;
     }
@@ -95,10 +88,10 @@ export default function Auth() {
         toast.error(error.message || 'Failed to create account');
       }
     } else {
-      // Consume the invitation code
+      // Mark email as used
       if (data?.user?.id) {
-        await supabase.rpc('use_invitation_code', { 
-          code_input: invitationCode.trim(), 
+        await supabase.rpc('use_approved_email', { 
+          email_input: signupEmail.trim(), 
           user_id_input: data.user.id 
         });
       }
@@ -182,24 +175,9 @@ export default function Auth() {
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>Authorized Personnel Only</AlertTitle>
                   <AlertDescription className="text-xs">
-                    Registration requires a valid invitation code from High Command.
+                    Registration requires your email to be pre-approved by High Command.
                   </AlertDescription>
                 </Alert>
-
-                <div className="space-y-2">
-                  <Label htmlFor="invitation-code">Invitation Code</Label>
-                  <div className="relative">
-                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="invitation-code"
-                      placeholder="Enter your invitation code"
-                      value={invitationCode}
-                      onChange={(e) => setInvitationCode(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
