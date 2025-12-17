@@ -15,7 +15,7 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const https = require('https');
 
-const BOT_TOKEN = MTQ1MDgxNzU3MzQ1NjE4MzQ3Mg.GlyGHa.uYim1qb27WfwwoLSq-6C_lOtTTohOtMjJuAwOw;
+const BOT_TOKEN = MTQ1MDgxNzU3MzQ1NjE4MzQ3Mg.GV5sXg.bM96lYmlPAw6GK-PQKRYiueMoHEaPXAIwyY4m8;
 const DUTY_CHANNEL_ID = 1442201608048873493;
 const WEBHOOK_URL = https://dvaudymlldvgjsltduus.supabase.co/functions/v1/duty-webhook;
 
