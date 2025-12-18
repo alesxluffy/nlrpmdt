@@ -99,12 +99,12 @@ export default function DutyHours() {
   } = useQuery({
     queryKey: ["duty-hours", "sessions", format(monthStart, "yyyy-MM")],
     queryFn: async () => {
-      // Include sessions that OVERLAP this month.
+      // Include sessions that overlap this month, including active sessions (end_time is null).
       const { data, error } = await supabase
         .from("duty_sessions")
         .select("id, officer_id, start_time, end_time, duration_hours, created_at")
-        .gte("end_time", monthStart.toISOString())
         .lte("start_time", monthEnd.toISOString())
+        .or(`end_time.is.null,end_time.gte.${monthStart.toISOString()}`)
         .order("start_time", { ascending: true });
 
       if (error) throw error;
@@ -168,6 +168,7 @@ export default function DutyHours() {
 
     return profiles.map((p) => {
       const officerSessions = sessionsByOfficer.get(p.id) ?? [];
+      const hasActiveSession = officerSessions.some((s) => !s.end_time);
 
       let totalMinutesToday = 0;
       let totalMinutesWeek = 0;
@@ -198,7 +199,7 @@ export default function DutyHours() {
         badge: p.badge_number ?? "—",
         rank: p.rank ?? "Unknown",
         division: p.division ?? "Unknown",
-        status: normalizeStatus(p.duty_status),
+        status: hasActiveSession ? "On Duty" : normalizeStatus(p.duty_status),
         totalMinutesToday,
         totalMinutesWeek,
         totalMinutesMonth,
