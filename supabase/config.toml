@@ -1,4 +1,7 @@
 project_id = "dvaudymlldvgjsltduus"
 
+[functions.add-duty-hours]
+verify_jwt = false
+
 [functions.duty-webhook]
 verify_jwt = false
