@@ -68,6 +68,44 @@ export type Database = {
         }
         Relationships: []
       }
+      duty_sessions: {
+        Row: {
+          created_at: string
+          duration_hours: number | null
+          end_time: string | null
+          id: string
+          license: string
+          officer_id: string | null
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          duration_hours?: number | null
+          end_time?: string | null
+          id?: string
+          license: string
+          officer_id?: string | null
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          duration_hours?: number | null
+          end_time?: string | null
+          id?: string
+          license?: string
+          officer_id?: string | null
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duty_sessions_officer_id_fkey"
+            columns: ["officer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incident_officers: {
         Row: {
           id: string
@@ -300,9 +338,11 @@ export type Database = {
           created_at: string | null
           discord: string | null
           division: string | null
+          duty_status: string | null
           first_name: string
           ic_phone: string | null
           id: string
+          last_duty_activity: string | null
           last_name: string
           license_id: string | null
           rank: string | null
@@ -310,6 +350,7 @@ export type Database = {
           status: string | null
           steam_name: string | null
           steam_url: string | null
+          total_hours: number | null
           updated_at: string | null
         }
         Insert: {
@@ -318,9 +359,11 @@ export type Database = {
           created_at?: string | null
           discord?: string | null
           division?: string | null
+          duty_status?: string | null
           first_name: string
           ic_phone?: string | null
           id: string
+          last_duty_activity?: string | null
           last_name: string
           license_id?: string | null
           rank?: string | null
@@ -328,6 +371,7 @@ export type Database = {
           status?: string | null
           steam_name?: string | null
           steam_url?: string | null
+          total_hours?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -336,9 +380,11 @@ export type Database = {
           created_at?: string | null
           discord?: string | null
           division?: string | null
+          duty_status?: string | null
           first_name?: string
           ic_phone?: string | null
           id?: string
+          last_duty_activity?: string | null
           last_name?: string
           license_id?: string | null
           rank?: string | null
@@ -346,6 +392,7 @@ export type Database = {
           status?: string | null
           steam_name?: string | null
           steam_url?: string | null
+          total_hours?: number | null
           updated_at?: string | null
         }
         Relationships: []
